@@ -38,12 +38,12 @@
 		<link>
 			<name>Clock.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-ORIGINAL_PROJECT_ROOT/inc/Clock.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/Clock.c</locationURI>
 		</link>
 		<link>
 			<name>CortexM.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-ORIGINAL_PROJECT_ROOT/inc/CortexM.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/CortexM.c</locationURI>
 		</link>
 		<link>
 			<name>Enemy.bmp</name>
@@ -58,12 +58,12 @@
 		<link>
 			<name>GPIO.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-ORIGINAL_PROJECT_ROOT/inc/GPIO.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/GPIO.c</locationURI>
 		</link>
 		<link>
 			<name>LaunchPad.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-ORIGINAL_PROJECT_ROOT/inc/LaunchPad.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/LaunchPad.c</locationURI>
 		</link>
 		<link>
 			<name>Motor.c</name>
@@ -93,7 +93,7 @@
 		<link>
 			<name>TExaS.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-ORIGINAL_PROJECT_ROOT/inc/TExaS.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/TExaS.c</locationURI>
 		</link>
 		<link>
 			<name>TimerA1.c</name>
@@ -103,7 +103,7 @@
 		<link>
 			<name>UART1.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-ORIGINAL_PROJECT_ROOT/inc/UART1.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/UART1.c</locationURI>
 		</link>
 	</linkedResources>
 	<variableList>
