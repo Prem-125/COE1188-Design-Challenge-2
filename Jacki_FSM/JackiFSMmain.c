@@ -1,39 +1,4 @@
-
-
-//*****************************************************************************
-//
-// Jacki FSM test main
-// MSP432 with Jacki
-// Daniel and Jonathan Valvano
-// July 11, 2019
-/* This example accompanies the book
-   "Embedded Systems: Introduction to Robotics,
-   Jonathan W. Valvano, ISBN: 9781074544300, copyright (c) 2019
- For more information about my classes, my research, and my books, see
- http://users.ece.utexas.edu/~valvano/
-Simplified BSD License (FreeBSD License)
-Copyright (c) 2019, Jonathan Valvano, All rights reserved.
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-1. Redistributions of source code must retain the above copyright notice,
-   this list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
-USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-The views and conclusions contained in the software and documentation are
-those of the authors and should not be interpreted as representing official
-policies, either expressed or implied, of the FreeBSD Project.
-*/
+//Team Gamma - Design Project 2
 
 #include <stdint.h>
 #include "msp.h"
@@ -42,7 +7,6 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "../inc/CortexM.h"
 #include "../inc/PWM.h"
 #include "../inc/LaunchPad.h"
-//#include "../inc/SysTick.h"
 #include "../inc/TExaS.h"
 #include "../inc/AP.h"
 #include "../inc/UART0.h"
@@ -51,9 +15,17 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "../inc/Motor.h"
 #include "../inc/TimerA1.h"
 #include "../inc/FlashProgram.h"
+#include "../inc/IRDistance.h"
+#include "../inc/LPF.h"
+#include "../inc/ADC14.h"
+#include "../inc/Tachometer.h"
+#include "../inc/TA2InputCapture.h"
 
 #define RAM_SIZE (256)
 #define LEDOUT (*((volatile uint8_t *)(0x42098040)))
+
+volatile uint32_t nr,nc,nl; // filtered ADC samples
+uint32_t Right,Center,Left; // distance in mm
 
 
 uint8_t ramTrk=0, LineReading,index, Readings[10];
@@ -63,31 +35,18 @@ uint32_t romTrk= 0x20000, Time, MainCount;
 
 struct State {
   uint8_t color;
-  uint16_t left;                // 2-bit output
-  uint16_t right;
-  void (*func)(uint16_t,uint16_t);                 // time to delay in 1ms
-  const struct State *next[12]; // Next if 2-bit input is 0-3
+  void (*func)();
+  const struct State *next[4];
 };
 typedef const struct State State_t;
 
-#define Straight    &fsm[0]
-#define SoftRight   &fsm[1]
-#define MidRight    &fsm[2]
-#define HardRight   &fsm[3]
-#define TurnRight   &fsm[4]
-#define SoftLeft    &fsm[5]
-#define MidLeft     &fsm[6]
-#define HardLeft    &fsm[7]
-#define TurnLeft    &fsm[8]
-#define Backup      &fsm[9]
-#define Stop        &fsm[10]
+//State assignments
+#define Travel          &fsm[0]
+#define FoundTreasure   &fsm[1]
+#define TurnRight       &fsm[2]
+#define TurnLeft        &fsm[3]
 
-#define FSpeed 10000
-#define SVSpeed (FSpeed - 100)
-#define MVSpeed (FSpeed - 500)
-#define TSpeed (FSpeed - 4000)
-#define HVSpeed (FSpeed - 2000)
-
+//LED Color Encodings
 #define RED       0x01
 #define GREEN     0x02
 #define YELLOW    0x03
@@ -96,32 +55,24 @@ typedef const struct State State_t;
 
 State_t *Spt;  // pointer to the current state
 
-void Turn_Left(uint16_t leftDuty, uint16_t rightDuty){
+void Turn_Left(){
   SysTick->CTRL = 0;
-  Motor_Left(leftDuty,rightDuty);
+  Motor_Left(7000, 7000);
   Clock_Delay1us(20000);
   Motor_Forward(6000,6000);
   Clock_Delay1us(5000);
   SysTick->CTRL = 0x00000007;
 }
-void Turn_Right(uint16_t leftDuty, uint16_t rightDuty){
+void Turn_Right(){
   SysTick->CTRL = 0;
-  Motor_Right(leftDuty,rightDuty);
+  Motor_Right(7000,7000);
   Clock_Delay1us(20000);
   Motor_Forward(7000,7000);
   Clock_Delay1us(5000);
   SysTick->CTRL = 0x00000007;
 }
-void BackUp(uint16_t leftDuty, uint16_t rightDuty){
-      SysTick->CTRL = 0;
-      Motor_Backward(7000,7000);
-      Clock_Delay1us(7000);
-      SysTick->CTRL = 0x00000007;
-}
-void Stop_Motors(uint16_t leftDuty, uint16_t rightDuty){
-      Motor_Stop();
-}
 
+//LED Init and Output functions
 void Port2_Init(void){
   P2->SEL0 = 0x00;
   P2->SEL1 = 0x00;                        // configure P2.2-P2.0 as GPIO
@@ -134,21 +85,16 @@ void Port2_Output(uint8_t data){        // write all of P2 outputs
   P2->OUT = data;
 }
 
+void Travelling()
+{
 
+}
 
-
-State_t fsm[11] = {
-   {CLEAR, FSpeed,FSpeed,&Motor_Forward,{Stop,TurnLeft,HardLeft,MidLeft,SoftLeft,Straight,SoftRight,MidRight,HardRight,TurnRight,Stop, Backup}}, // Straight
-   {BLUE, FSpeed,SVSpeed,&Motor_Forward,{Stop,TurnLeft,HardLeft,MidLeft,SoftLeft,Straight,SoftRight,MidRight,HardRight,TurnRight,Stop, Backup}}, // Soft Right
-   {YELLOW, FSpeed,MVSpeed,&Motor_Forward,{Stop,TurnLeft,HardLeft,MidLeft,SoftLeft,Straight,SoftRight,MidRight,HardRight,TurnRight,Stop, Backup}}, // Mid Right
-   {GREEN, FSpeed,HVSpeed,&Motor_Forward,{Backup,TurnLeft,HardLeft,MidLeft,SoftLeft,Straight,SoftRight,MidRight,HardRight,TurnRight,Stop, Backup}}, // Hard Right
-   {RED, TSpeed,TSpeed,&Turn_Right,{Backup,TurnLeft,HardLeft,MidLeft,SoftLeft,Straight,SoftRight,MidRight,HardRight,TurnRight,Stop, Backup}}, // Turn Right
-   {BLUE, SVSpeed,FSpeed,&Motor_Forward,{Stop,TurnLeft,HardLeft,MidLeft,SoftLeft,Straight,SoftRight,MidRight,HardRight,TurnRight,Stop, Backup}}, // Soft Left
-   {YELLOW, MVSpeed,FSpeed,&Motor_Forward,{Stop,TurnLeft,HardLeft,MidLeft,SoftLeft,Straight,SoftRight,MidRight,HardRight,TurnRight,Stop, Backup}}, // Mid Left
-   {GREEN, HVSpeed,FSpeed,&Motor_Forward,{Backup,TurnLeft,HardLeft,MidLeft,SoftLeft,Straight,SoftRight,MidRight,HardRight,TurnRight,Stop, Backup}}, // Hard Left
-   {RED, TSpeed,TSpeed,&Turn_Left,{Backup,TurnLeft,HardLeft,MidLeft,SoftLeft,Straight,SoftRight,MidRight,HardRight,TurnRight,Stop, Backup}}, // Turn Left
-   {CLEAR, TSpeed,TSpeed,&BackUp,{Backup,TurnLeft,TurnLeft,TurnLeft,TurnLeft,TurnLeft,TurnRight,TurnRight,TurnRight,TurnRight,Stop, Backup}}, // Backup
-   {CLEAR, 0,0,&Stop_Motors,{Stop,TurnLeft,HardLeft,MidLeft,SoftLeft,Straight,SoftRight,MidRight,HardRight,TurnRight,Stop, Backup}} // Stop
+State_t fsm[4] = {
+   {BLUE, &Travelling,{Travel,Travel,Travel, Travel}}, // Travel
+   {BLUE, &Travelling,{Travel,Travel,Travel, Travel}}, // Travel
+   {BLUE, &Travelling,{Travel,Travel,Travel, Travel}}, // Travel
+   {BLUE, &Travelling,{Travel,Travel,Travel, Travel}}, // TurnLeft
 };
 
 uint8_t lineToState(uint8_t prev){
@@ -194,9 +140,6 @@ uint8_t lineToState(uint8_t prev){
     else {
             return prev;
     }
-
-
-
 }
 
 void Debug_Init(void){
@@ -231,11 +174,7 @@ void Pause(void){
   while(LaunchPad_Input());     // wait for release
 }
 
-void Task(void){
-  //if(run == 15) TimerA1_Stop();
-  //else run++;
-}
-
+//SUBJECT TO CHANGE
 void HandleCollision(uint8_t bump){
     if(bump != 0x3F)
     {
@@ -269,7 +208,6 @@ void HandleCollision(uint8_t bump){
         }
     }
 
-    TimerA1_Init(&Task,50000);
 }
 
 void PORT4_IRQHandler(void){
@@ -284,17 +222,69 @@ void SysTick_Handler(void){ // every 1ms
     }
     else if (Time % 5 == 1){
         LineReading = Reflectance_End();
-        index = lineToState(index);
-        Spt=Spt->next[index];
-        Debug_Dump(0, index);
-        Port2_Output(Spt->color);
-        (*Spt->func)(Spt->left,Spt->right);
     }
+
+    Center = CenterConvert(nc);
+    Left = LeftConvert(nl);
+    Right = RightConvert(nr);
+
     Time++;
 }
 
+
+void Center_Handler(uint16_t time)
+{
+    nc = LPF_Calc2(time);
+}
+
+void Left_Handler(uint16_t time)
+{
+    nl = LPF_Calc3(time);
+}
+
+void Right_Handler(uint16_t time)
+{
+    nr = LPF_Calc(time);
+}
+
+void Trigger_Init()
+{
+    //Initialize P2.7 as the trigger (output)
+    P2 -> SEL0 &= ~0x80;
+    P2 -> SEL1 &= ~0x80;
+    P2 -> DIR  |= 0x80;
+    P2 -> OUT  &= ~0x80;
+}
+
+void Trigger_Handler()
+{
+    P2 -> OUT &= ~0x80;
+    Clock_Delay1us(2);
+    P2 -> OUT |= 0x80;
+    Clock_Delay1us(15);
+    P2 -> OUT &= ~0x80;
+
+    //Reset timer
+    TimerA2Capture_Init(&Center_Handler, &Left_Handler, &Right_Handler);
+}
+
 void main(void){
+
+    DisableInterrupts();
     Clock_Init48MHz();
+
+    //Low pass filter initializers
+    LPF_Init(0, 64);  // P9.0/channel 17, 64-wide FIR filter
+    LPF_Init2(0, 64); // P6.1/channel 14, 64-wide FIR filter
+    LPF_Init3(0, 64);
+
+    //Setting IR sampling to the timer
+    TimerA1_Init(&Trigger_Handler, 125);
+
+    //Timer for Wall Sensors (5.6 = 1, 5.7 = 2, 6.6 = 3)
+    TimerA2Capture_Init(&Center_Handler, &Left_Handler, &Right_Handler);
+
+    //Other
     Debug_Init();
     Debug_FlashInit();
     Time = MainCount = LineReading = index = 0;
@@ -303,9 +293,10 @@ void main(void){
     Port2_Init();
     Motor_Init();
     Bump_Init();
-    TimerA1_Init(&Task, 50000);
+    Tachometer_Init();
     EnableInterrupts();
-    Spt = Straight;
+
+    Spt = Travel;
     while(1){
         WaitForInterrupt();
         MainCount++;

@@ -26,6 +26,11 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>ADC14.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/ADC14.c</locationURI>
+		</link>
+		<link>
 			<name>AP.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/inc/AP.c</locationURI>
@@ -61,6 +66,16 @@
 			<locationURI>PARENT-1-PROJECT_LOC/inc/GPIO.c</locationURI>
 		</link>
 		<link>
+			<name>IRDistance.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/IRDistance.c</locationURI>
+		</link>
+		<link>
+			<name>LPF.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/LPF.c</locationURI>
+		</link>
+		<link>
 			<name>LaunchPad.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/inc/LaunchPad.c</locationURI>
@@ -86,6 +101,11 @@
 			<locationURI>PARENT-1-PROJECT_LOC/inc/SysTickInts.c</locationURI>
 		</link>
 		<link>
+			<name>TA2InputCapture.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/TA2InputCapture.c</locationURI>
+		</link>
+		<link>
 			<name>TA3InputCapture.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/inc/TA3InputCapture.c</locationURI>
@@ -94,6 +114,11 @@
 			<name>TExaS.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/inc/TExaS.c</locationURI>
+		</link>
+		<link>
+			<name>Tachometer.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/Tachometer.c</locationURI>
 		</link>
 		<link>
 			<name>TimerA1.c</name>
