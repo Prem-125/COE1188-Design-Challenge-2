@@ -51,9 +51,19 @@
 			<locationURI>PARENT-1-PROJECT_LOC/inc/CortexM.c</locationURI>
 		</link>
 		<link>
+			<name>EUSCIA0.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/EUSCIA0.c</locationURI>
+		</link>
+		<link>
 			<name>Enemy.bmp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/inc/Enemy.bmp</locationURI>
+		</link>
+		<link>
+			<name>FIFO0.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/FIFO0.c</locationURI>
 		</link>
 		<link>
 			<name>FlashProgram.c</name>

@@ -109,7 +109,7 @@ uint16_t TxFifo0_Size(void);
 /**
  * \brief Size of the RxFifo0, can hold 0 to RX0FIFOSIZE-1 elements, must be a power of 2
  */
-#define RX0FIFOSIZE 16 // must be a power of 2
+#define Rx0FIFOSIZE 16 // must be a power of 2
 
 /**
  * @details   The RxFifo0 FIFO is used by the receive channel. Incoming data are stored into this FIFO.

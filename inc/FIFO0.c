@@ -45,82 +45,121 @@ policies, either expressed or implied, of the FreeBSD Project.
 // Implementation of the transmit FIFO, TxFifo0
 // can hold 0 to TXFIFOSIZE-1 elements
 // you are allowed to restrict TXFIFOSIZE to a power of 2
-uint32_t volatile Tx0PutI; // put next
-uint32_t volatile Tx0GetI; // get next
-char static TxFifo0[TX0FIFOSIZE];
+
+// add static, volatile, global variables here this as part of Lab 18
+static volatile uint8_t TxBuff[TX0FIFOSIZE];
+static volatile uint8_t TxStart;
+static volatile uint8_t TxEnd;
+static volatile uint8_t RxBuff[Rx0FIFOSIZE];
+static volatile uint8_t RxStart;
+static volatile uint8_t RxEnd;
+
 uint32_t TxHistogram[TX0FIFOSIZE];
 // probability mass function of the number of times TxFifo0 as this size
 // as a function of FIFO size at the beginning of call to TxFifo0_Put
-
-// initialize index FIFO
+// initialize index TxFifo0
 void TxFifo0_Init(void){int i;
-  Tx0PutI = Tx0GetI = 0;  // Empty
+
+
+  for(i=0;i<TX0FIFOSIZE;i++){
+      TxBuff[i] = 0;
+  }
+
   for(i=0;i<TX0FIFOSIZE;i++){
       TxHistogram[i] = 0;
   }
+
+  TxStart = 0;
+  TxEnd = 0;
 }
-// add element to end of TxFifo0
+// add element to end of index TxFifo0
 // return TXFIFOSUCCESS if successful
 int TxFifo0_Put(char data){
-  TxHistogram[TxFifo0_Size()]++;   // probability mass function
-  if(((Tx0PutI+1)&(TX0FIFOSIZE-1)) == Tx0GetI){
-    return(FIFOFAIL); // Failed, fifo full
-  }
-  TxFifo0[Tx0PutI] = data; // put
-  Tx0PutI=(Tx0PutI+1)&(TX0FIFOSIZE-1);  // Success, update
+  TxHistogram[TxFifo0_Size()]++;  // probability mass function
+  if(TxFifo0_Size()==TX0FIFOSIZE -1 )
+      return FIFOFAIL;
+  TxBuff[TxEnd]=data;
+  TxEnd= (TxEnd+1) & (TX0FIFOSIZE -1);
+
+
+
+// write this as part of Lab 18
+
   return(FIFOSUCCESS);
 }
 // remove element from front of TxFifo0
 // return TXFIFOSUCCESS if successful
 int TxFifo0_Get(char *datapt){
-  if(Tx0PutI == Tx0GetI){
-    return(FIFOFAIL); // Empty if TxPutI=TxGetI
-  }
-  *datapt = TxFifo0[Tx0GetI];
-  Tx0GetI = (Tx0GetI+1)&(TX0FIFOSIZE-1);  // Success, update
-  return(FIFOSUCCESS);
+
+    if(TxFifo0_Size()==0 )
+         return FIFOFAIL;
+     *datapt = TxBuff[TxStart];
+     TxStart= (TxStart+1) & (TX0FIFOSIZE -1);
+     return(FIFOSUCCESS);
 }
-// number of elements in index FIFO
+// number of elements in TxFifo0
 // 0 to TXFIFOSIZE-1
 uint16_t TxFifo0_Size(void){
- return ((uint16_t)(Tx0PutI-Tx0GetI)&(TX0FIFOSIZE-1));
+    if(TxStart <= TxEnd){
+        return TxEnd - TxStart;
+    }else{
+        return TxEnd - TxStart + TX0FIFOSIZE;
+    }
 }
 
-// Implementation of the receive FIFO
+// Implementation of the receive FIFO, RxFifo0
 // can hold 0 to RXFIFOSIZE-1 elements
 // you are allowed to restrict RXFIFOSIZE to a power of 2
-uint32_t volatile Rx0PutI; // put next
-uint32_t volatile Rx0GetI; // get next
-char static RxFifo0[RX0FIFOSIZE];
+uint32_t RxHistogram[Rx0FIFOSIZE];
+// probability mass function of the number of times RxFifo0 as this size
+// as a function of FIFO size at the beginning of call to RxFifo0_Put
+// initialize index RxFifo0
+void RxFifo0_Init(void){int i;
 
-// initialize RxFifo0
-void RxFifo0_Init(void){
-  Rx0PutI = Rx0GetI = 0;  // Empty
-}
-// add element to end of RxFifo0
-// return FIFOSUCCESS if successful
-int RxFifo0_Put(char data){
-  if(((Rx0PutI+1)&(RX0FIFOSIZE-1)) == Rx0GetI){
-    return(FIFOFAIL); // Failed, fifo full
+
+  for(i=0;i<Rx0FIFOSIZE;i++){
+      RxBuff[i] = 0;
   }
-  RxFifo0[Rx0PutI] = data; // put
-  Rx0PutI=(Rx0PutI+1)&(RX0FIFOSIZE-1);  // Success, update
+
+  for(i=0;i<Rx0FIFOSIZE;i++){
+      RxHistogram[i] = 0;
+  }
+
+  RxStart = 0;
+  RxEnd = 0;
+}
+// add element to end of index RxFifo0
+// return RxFIFOSUCCESS if successful
+int RxFifo0_Put(char data){
+  RxHistogram[RxFifo0_Size()]++;  // probability mass function
+  if(RxFifo0_Size()==Rx0FIFOSIZE -1 )
+      return FIFOFAIL;
+  RxBuff[RxEnd]=data;
+  RxEnd= (RxEnd+1) & (Rx0FIFOSIZE -1);
+
+
+
+// write this as part of Lab 18
+
   return(FIFOSUCCESS);
 }
 // remove element from front of RxFifo0
-// return FIFOSUCCESS if successful
+// return RxFIFOSUCCESS if successful
 int RxFifo0_Get(char *datapt){
-  if(Rx0PutI == Rx0GetI){
-    return(FIFOFAIL); // Empty if RxPutI=RxGetI
-  }
-  *datapt = RxFifo0[Rx0GetI];
-  Rx0GetI = (Rx0GetI+1)&(RX0FIFOSIZE-1);  // Success, update
-  return(FIFOSUCCESS);
+
+    if(RxFifo0_Size()==0 )
+         return FIFOFAIL;
+     *datapt = RxBuff[RxStart];
+     RxStart= (RxStart+1) & (Rx0FIFOSIZE -1);
+     return(FIFOSUCCESS);
 }
 // number of elements in RxFifo0
-// 0 to RXFIFOSIZE-1
+// 0 to RxFIFOSIZE-1
 uint16_t RxFifo0_Size(void){
- return ((uint16_t)(Rx0PutI-Rx0GetI)&(RX0FIFOSIZE-1));
+    if(RxStart <= RxEnd){
+        return RxEnd - RxStart;
+    }else{
+        return RxEnd - RxStart + Rx0FIFOSIZE;
+    }
 }
-
 

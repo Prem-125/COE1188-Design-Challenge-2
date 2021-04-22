@@ -1,6 +1,7 @@
 //Team Gamma - Design Project 2
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "msp.h"
 #include "../inc/SysTickInts.h"
 #include "../inc/Clock.h"
@@ -20,6 +21,7 @@
 #include "../inc/ADC14.h"
 #include "../inc/Tachometer.h"
 #include "../inc/TA2InputCapture.h"
+#include "../inc/EUSCIA0.h"
 
 #define RAM_SIZE (256)
 #define LEDOUT (*((volatile uint8_t *)(0x42098040)))
@@ -53,6 +55,13 @@ typedef const struct State State_t;
 #define BLUE      0x04
 #define CLEAR     0x00
 
+
+#define DETECTFW 100
+#define DETECTL 100
+#define DETECTR 100
+
+bool FWall,RWall,LWall;
+
 State_t *Spt;  // pointer to the current state
 
 void Turn_Left(){
@@ -74,73 +83,81 @@ void Turn_Right(){
 
 //LED Init and Output functions
 void Port2_Init(void){
-  P2->SEL0 = 0x00;
-  P2->SEL1 = 0x00;                        // configure P2.2-P2.0 as GPIO
-  P2->DS = 0x07;                          // make P2.2-P2.0 high drive strength
-  P2->DIR = 0x07;                         // make P2.2-P2.0 out
-  P2->OUT = 0x00;                         // all LEDs off
+  P2->SEL0 &= ~0x07;
+  P2->SEL1 &= ~0x07;                        // configure P2.2-P2.0 as GPIO
+  P2->DS |= 0x07;                          // make P2.2-P2.0 high drive strength
+  P2->DIR |= 0x07;                         // make P2.2-P2.0 out
+  P2->OUT |= 0x07;                         // all LEDs off
 }
 
 void Port2_Output(uint8_t data){        // write all of P2 outputs
   P2->OUT = data;
 }
 
+uint16_t accumulator;
+uint16_t oldError = 0;
+#define P 1.0
+#define I 0.4
+#define D 1.0
+#define BaseSpeed 7000
+
 void Travelling()
 {
+    uint16_t error = Left - Right;
+    accumulator += error;
+    uint16_t deltaError = error - oldError;
+
+    uint16_t diff= 0;
+    diff += error * P;
+    diff += accumulator * I;
+    diff += deltaError * D;
+    //Motor_Forward(6000,6000);
+    uint16_t lspeed = BaseSpeed - diff;
+    uint16_t rspeed = BaseSpeed + diff;
+    Motor_Forward(lspeed,rspeed);
+
+    oldError = error;
+}
+
+void Found_Treasure(){
 
 }
 
 State_t fsm[4] = {
-   {BLUE, &Travelling,{Travel,Travel,Travel, Travel}}, // Travel
-   {BLUE, &Travelling,{Travel,Travel,Travel, Travel}}, // Travel
-   {BLUE, &Travelling,{Travel,Travel,Travel, Travel}}, // Travel
-   {BLUE, &Travelling,{Travel,Travel,Travel, Travel}}, // TurnLeft
+   {BLUE, &Travelling,{Travel,TurnRight,TurnLeft, FoundTreasure}}, // Travel
+   {BLUE, &Found_Treasure,{FoundTreasure,FoundTreasure,FoundTreasure, FoundTreasure}}, // Travel
+   {BLUE, &Turn_Right,{Travel,TurnRight,TurnLeft, FoundTreasure}}, // Travel
+   {BLUE, &Turn_Left,{Travel,TurnRight,TurnLeft, FoundTreasure}} // TurnLeft
 };
 
-uint8_t lineToState(uint8_t prev){
-    if ( LineReading == 0x0){
-        return 0;
-    }
-    else if (LineReading == 0x18 || LineReading == 0x1C || LineReading == 0x38 || LineReading == 0x3C)
-    {
-        return 5;
-    }
-    else if ( (LineReading == 0x30) || (LineReading == 0x10) || (LineReading == 0x20) )
-    {
-        return 4;
-    }
-    else if ( (LineReading == 0x60) || (LineReading == 0xE0) || (LineReading == 0x70) || (LineReading == 0x40)  )
-    {
+uint8_t StateSel(){
+    if(LineReading!= 0x3F){ // Treasure Found
         return 3;
     }
-    else if ( (LineReading == 0x80) )
-    {
-        return 2;
-    }
-    else if ( (LineReading == 0x0C) || (LineReading == 0x08) || (LineReading == 0x04) )
-    {
-        return 8;
-    }
-    else if ( (LineReading == 0x06) || (LineReading == 0x0E) || (LineReading == 0x07) || (LineReading == 0x03) || (LineReading == 0x02) )
-    {
-        return 6;
-    }
-    else if ( (LineReading == 0x01) )
-    {
-        return 8;
-    }
-    else if ( (LineReading == 0xF0) || (LineReading == 0xF8) || (LineReading == 0xFC) || (LineReading == 0xFE) )
-    {
+    if(FWall && RWall && LWall){ // Dead End
         return 1;
     }
-    else if ( (LineReading == 0x0F) || (LineReading == 0x1F) || (LineReading == 0x3F)  || (LineReading == 0x7F) )
-    {
-        return 9;
+    if (!FWall && RWall && LWall){ // Corridor
+        return 0;
     }
-    else {
-            return prev;
+
+    if (FWall && RWall &!LWall){// 90 deg left
+        return 2;
     }
+
+    if (FWall && !RWall &LWall){// 90 deg right
+            return 1;
+        }
+    if (RWall)
+    return 0;
+
+    return 1;
+
+
+
 }
+
+
 
 void Debug_Init(void){
     int i;
@@ -215,7 +232,7 @@ void PORT4_IRQHandler(void){
     HandleCollision(Bump_Read());
 }
 
-
+uint16_t LTIME = 0;
 void SysTick_Handler(void){ // every 1ms
     if (Time % 5 == 0){
         Reflectance_Start();
@@ -228,23 +245,46 @@ void SysTick_Handler(void){ // every 1ms
     Left = LeftConvert(nl);
     Right = RightConvert(nr);
 
+    FWall = (Center < DETECTFW ? true : false);
+    RWall = (Center < DETECTR ? true : false);
+    LWall = (Center < DETECTL ? true : false);
+
+
+    //sel functinon
+    if(Time % 1000 == 0){
+        EUSCIA0_OutString("\nDebug MSG\n");
+        EUSCIA0_OutString("\nLeft\n");
+
+    EUSCIA0_OutUDec(Left); EUSCIA0_OutChar(LF);
+    EUSCIA0_OutUDec(nl); EUSCIA0_OutChar(LF);
+    EUSCIA0_OutString("\nCenter\n");
+
+    EUSCIA0_OutUDec(Center); EUSCIA0_OutChar(LF);
+    EUSCIA0_OutUDec(nc); EUSCIA0_OutChar(LF);
+    EUSCIA0_OutString("\nRight\n");
+
+    EUSCIA0_OutUDec(Right); EUSCIA0_OutChar(LF);
+    EUSCIA0_OutUDec(nr); EUSCIA0_OutChar(LF);
+   // EUSCIA0_OutUDec(Right); EUSCIA0_OutChar(LF);
+    }
     Time++;
 }
 
 
-void Center_Handler(uint16_t time)
+void Center_Handler(uint16_t timeIn)
 {
-    nc = LPF_Calc2(time);
+    nc = LPF_Calc2(timeIn);
 }
 
-void Left_Handler(uint16_t time)
+void Left_Handler(uint16_t timeIn)
 {
-    nl = LPF_Calc3(time);
+    nl = LPF_Calc3(timeIn);
+    LTIME = timeIn;
 }
 
-void Right_Handler(uint16_t time)
+void Right_Handler(uint16_t timeIn)
 {
-    nr = LPF_Calc(time);
+    nr = LPF_Calc(timeIn);
 }
 
 void Trigger_Init()
@@ -258,14 +298,17 @@ void Trigger_Init()
 
 void Trigger_Handler()
 {
+    DisableInterrupts();
+
     P2 -> OUT &= ~0x80;
     Clock_Delay1us(2);
     P2 -> OUT |= 0x80;
-    Clock_Delay1us(15);
+    Clock_Delay1us(1000);
     P2 -> OUT &= ~0x80;
-
     //Reset timer
     TimerA2Capture_Init(&Center_Handler, &Left_Handler, &Right_Handler);
+    EnableInterrupts();
+
 }
 
 void main(void){
@@ -274,15 +317,20 @@ void main(void){
     Clock_Init48MHz();
 
     //Low pass filter initializers
-    LPF_Init(0, 64);  // P9.0/channel 17, 64-wide FIR filter
-    LPF_Init2(0, 64); // P6.1/channel 14, 64-wide FIR filter
+    LPF_Init(0, 64);
+    LPF_Init2(0, 64);
     LPF_Init3(0, 64);
 
     //Setting IR sampling to the timer
-    TimerA1_Init(&Trigger_Handler, 125);
+    Trigger_Init();
+    TimerA1_Init(&Trigger_Handler, 100000);
 
     //Timer for Wall Sensors (5.6 = 1, 5.7 = 2, 6.6 = 3)
     TimerA2Capture_Init(&Center_Handler, &Left_Handler, &Right_Handler);
+
+    //Enable UART Comms
+    EUSCIA0_Init();
+
 
     //Other
     Debug_Init();
@@ -295,6 +343,8 @@ void main(void){
     Bump_Init();
     Tachometer_Init();
     EnableInterrupts();
+   // EUSCIA0_OutString("\nStarting\n");
+
 
     Spt = Travel;
     while(1){

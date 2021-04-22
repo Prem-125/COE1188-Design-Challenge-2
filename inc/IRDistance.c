@@ -53,30 +53,33 @@ policies, either expressed or implied, of the FreeBSD Project.
 #define Al 1195159
 #define Bl -1058
 #define Cl 40
-#define IRmaxl 2552
+#define IRmaxl 120000
 int32_t LeftConvert(int32_t nl){        // returns left distance in mm
-  if(nl < IRmaxl){
+  if(nl > IRmaxl){
     return 800;
   }
-  return Al/(nl + Bl) + Cl;
+  return (nl)/100;
 }
 #define Ac 1195159
 #define Bc -1058
 #define Cc 40
-#define IRmaxc 2552
+#define IRmaxc 120000
 int32_t CenterConvert(int32_t nc){   // returns center distance in mm
-  if(nc < IRmaxc){
+  if(nc > IRmaxc){
     return 800;
   }
-  return Ac/(nc + Bc) + Cc;
+  return (nc)/100;
 }
 #define Ar 1195159
 #define Br -1058
 #define Cr 40
-#define IRmaxr 2552
+#define IRmaxr 120000
 int32_t RightConvert(int32_t nr){      // returns right distance in mm
-  if(nr < IRmaxr){
+  if(nr > IRmaxr){
     return 800;
   }
-  return Ar/(nr + Br) + Cr;
+  uint32_t sum = (nr)/100;
+  if(sum > 240)
+      return sum -240;
+  return sum;
 }
