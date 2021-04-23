@@ -58,7 +58,8 @@ int32_t LeftConvert(int32_t nl){        // returns left distance in mm
   if(nl > IRmaxl){
     return 800;
   }
-  return (nl)/100;
+  int32_t sum = (nl)/100;
+  return (sum - 240 < 0 ? 0 : sum-240);
 }
 #define Ac 1195159
 #define Bc -1058
@@ -68,7 +69,8 @@ int32_t CenterConvert(int32_t nc){   // returns center distance in mm
   if(nc > IRmaxc){
     return 800;
   }
-  return (nc)/100;
+  int32_t sum = (nc)/100;
+    return (sum - 240 < 0 ? 0 : sum-240);
 }
 #define Ar 1195159
 #define Br -1058
@@ -78,8 +80,6 @@ int32_t RightConvert(int32_t nr){      // returns right distance in mm
   if(nr > IRmaxr){
     return 800;
   }
-  uint32_t sum = (nr)/100;
-  if(sum > 240)
-      return sum -240;
-  return sum;
+  int32_t sum = (nr)/100;
+  return (sum - 240 < 0 ? 0 : sum-240);
 }
