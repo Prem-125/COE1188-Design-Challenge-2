@@ -34,7 +34,15 @@ uint8_t ramTrk=0, LineReading,index, Readings[10];
 uint16_t ramVals[RAM_SIZE];
 uint32_t romTrk= 0x20000, Time, MainCount;
 
+//Color Declarations
+#define RED       0x01
+#define GREEN     0x02
+#define YELLOW    0x03
+#define BLUE      0x04
+#define CLEAR     0x00
+
 struct State {
+  uint8_t color;
   void (*func)();                 // time to delay in 1ms
   const struct State *next[5]; // Next if 2-bit input is 0-3
 };
@@ -48,8 +56,7 @@ typedef const struct State State_t;
 
 State_t *Spt;  // pointer to the current state
 
-bool FWall,RWall,LWall;
-
+uint8_t FWall,RWall,LWall;
 
 void Turn_Left(){
   SysTick->CTRL = 0;
@@ -98,7 +105,7 @@ uint16_t oldError = 0;
 #define P 9
 #define I 0
 #define D 0
-#define BaseSpeed 7000
+#define BaseSpeed 0
 uint16_t diff= 0;
 
 void Travelling()
@@ -111,10 +118,10 @@ void Travelling()
     diff += error * P;
     diff += accumulator * I;
     diff += deltaError * D;
-    //Motor_Forward(6000,6000);
+    Motor_Forward(3000,3000);
     uint16_t lspeed = BaseSpeed - diff;
     uint16_t rspeed = BaseSpeed + diff;
-    Motor_Forward(lspeed,rspeed);
+    ///Motor_Forward(lspeed,rspeed);
 
     oldError = error;
 }
@@ -124,11 +131,11 @@ void Found_Treasure(){
 }
 
 State_t fsm[5] = {
-   {&Travelling,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}}, // Straight
-   {&Turn_Right,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}}, // RightTurn
-   {&Turn_Left,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}}, // LeftTurn
-   {&Turn_180,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}}, //CircleTurn
-   {&Found_Treasure,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}} //CircleTurn
+   {RED, &Travelling,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}}, // Straight
+   {GREEN, &Turn_Right,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}}, // RightTurn
+   {YELLOW, &Turn_Left,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}}, // LeftTurn
+   {BLUE, &Turn_180,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}}, //CircleTurn
+   {CLEAR, &Found_Treasure,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}} //FoundTreasure
 };
 
 uint8_t StateSel(void){
@@ -138,25 +145,20 @@ uint8_t StateSel(void){
     }
     */
     if(FWall && RWall && LWall){ // Dead End
-        return 3;
+        return 0; //this is bad!!
     }
     if (!FWall && RWall && LWall){ // Corridor
         return 0;
     }
 
-    if (FWall && RWall &!LWall){// 90 deg left
+    if (RWall &!LWall){// 90 deg left
         return 2;
     }
 
-    if (FWall && !RWall &LWall){// 90 deg right
+    if (!RWall &LWall){// 90 deg right
         return 1;
     }
-    if (RWall) return 1;
-    return 0;
-
 }
-
-
 
 void Debug_Init(void){
     int i;
@@ -179,9 +181,9 @@ void Debug_FlashRecord(uint16_t *pt){
     int i;
     if(romTrk < 0x40000){
     for(i =0; i < RAM_SIZE /32; i++ ){
-    Flash_FastWrite((uint32_t *)(pt+32 * i),romTrk,16);
-    romTrk += 64;
-    }
+        Flash_FastWrite((uint32_t *)(pt+32 * i),romTrk,16);
+        romTrk += 64;
+        }
     }
 }
 
@@ -235,26 +237,38 @@ void PORT4_IRQHandler(void){
 #define DETECTL 150
 #define DETECTR 150
 
+uint8_t FWall,RWall,LWall;
+uint8_t LBuff[5];
+uint8_t RBuff[5];
+uint8_t CBuff[5];
+
+uint8_t sum(bool buff[])
+{
+    uint8_t sum=0;
+    for(int i = 0; i<5; i++)
+        sum += buff[i];
+    return sum;
+}
+
 uint16_t LTIME = 0;
 void SysTick_Handler(void){ // every 1ms
     if (Time % 5 == 0){
         Reflectance_Start();
     }
     else if (Time % 5 == 1){
+        FWall = (Center > 0 ? 1 : 0);
+        RWall = (Right  > 0 ? 1 : 0);
+        LWall = (Left   > 0 ? 1 : 0);
         LineReading = Reflectance_End();
+        index = StateSel();
+        Spt=Spt->next[index];
+        (*Spt->func)();
+        Port2_Output(Spt->color);
     }
 
     Center = CenterConvert(nc);
     Left = LeftConvert(nl);
     Right = RightConvert(nr);
-
-    FWall = (Center < DETECTFW && Center > 30 ? true : false);
-    RWall = (Right < DETECTR && Right > 0 ? true : false);
-    LWall = (Left < DETECTL && Left > 0 ? true : false);
-
-    index = StateSel();
-    Spt=Spt->next[index];
-    (*Spt->func)();
 
     //sel function
     if(Time % 1000 == 0){
@@ -263,9 +277,10 @@ void SysTick_Handler(void){ // every 1ms
 
     EUSCIA0_OutUDec(Left); EUSCIA0_OutChar(LF);
     EUSCIA0_OutUDec(nl); EUSCIA0_OutChar(LF);
-    EUSCIA0_OutString("\nDiff\n");
+    EUSCIA0_OutString("\nCenter\n");
 
-    EUSCIA0_OutUDec(diff); EUSCIA0_OutChar(LF);
+    EUSCIA0_OutUDec(Center); EUSCIA0_OutChar(LF);
+    EUSCIA0_OutUDec(nc); EUSCIA0_OutChar(LF);
     EUSCIA0_OutString("\nRight\n");
 
     EUSCIA0_OutUDec(Right); EUSCIA0_OutChar(LF);
@@ -322,13 +337,13 @@ void main(void){
     Clock_Init48MHz();
 
     //Low pass filter initializers
-    LPF_Init(100, 8);
-    LPF_Init2(100, 8);
-    LPF_Init3(100, 8);
+    LPF_Init(30, 64);
+    LPF_Init2(35, 64);
+    LPF_Init3(30, 64);
 
     //Setting IR sampling to the timer
     Trigger_Init();
-    TimerA1_Init(&Trigger_Handler, 10000);
+    TimerA1_Init(&Trigger_Handler, 100000);
 
     //Timer for Wall Sensors (5.6 = 1, 5.7 = 2, 6.6 = 3)
     TimerA2Capture_Init(&Center_Handler, &Left_Handler, &Right_Handler);
