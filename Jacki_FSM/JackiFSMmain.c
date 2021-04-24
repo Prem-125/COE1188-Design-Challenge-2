@@ -251,44 +251,44 @@ void SysTick_Handler(void){ // every 1ms
     //sel function
     if(Time % 1000 == 0){
         EUSCIA0_OutString("\nDebug MSG\n");
-        EUSCIA0_OutString("\nLeft\n");
-
-        EUSCIA0_OutUDec(Left); EUSCIA0_OutChar(LF);
-        EUSCIA0_OutUDec(nl); EUSCIA0_OutChar(LF);
-        EUSCIA0_OutString("\nCenter\n");
-
-        EUSCIA0_OutUDec(Center); EUSCIA0_OutChar(LF);
-        EUSCIA0_OutUDec(nc); EUSCIA0_OutChar(LF);
         EUSCIA0_OutString("\nRight\n");
 
         EUSCIA0_OutUDec(Right); EUSCIA0_OutChar(LF);
         EUSCIA0_OutUDec(nr); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutString("\nCenter\n");
+
+        EUSCIA0_OutUDec(Center); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutUDec(nc); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutString("\nLeft\n");
+
+        EUSCIA0_OutUDec(Left); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutUDec(nl); EUSCIA0_OutChar(LF);
        // EUSCIA0_OutUDec(Right); EUSCIA0_OutChar(LF);
     }
     Time++;
 }
 
-uint32_t ltime, rtime, ctime;
+int32_t ltime, rtime, ctime;
 bool rRise = true, cRise = true, lRise = true;
-void Center_Handler(uint32_t timeIn)
+void Center_Handler(int32_t timeIn1)
 {
-    if(cRise) ctime = timeIn;
-    else nc = LPF_Calc2(timeIn-ctime);
+    if(cRise) ctime = timeIn1;
+    else nc = LPF_Calc2(abs(timeIn1-ctime));
     cRise = !cRise;
     P3 -> OUT ^= 0x40;
 }
 
-void Left_Handler(uint32_t timeIn)
+void Left_Handler(int32_t timeIn2)
 {
-    if(lRise) ltime = timeIn;
-    else nl = LPF_Calc3(timeIn-ltime);
+    if(lRise) ltime = timeIn2;
+    else nl = LPF_Calc3(abs(timeIn2-ltime));
     lRise = !lRise;
 }
 
-void Right_Handler(uint32_t timeIn)
+void Right_Handler(int32_t timeIn3)
 {
-    if(rRise) rtime = timeIn;
-    else nr = LPF_Calc(timeIn-rtime);
+    if(rRise) rtime = timeIn3;
+    else nr = LPF_Calc(abs(timeIn3-rtime));
     rRise = !rRise;
 }
 
