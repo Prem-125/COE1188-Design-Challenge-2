@@ -93,9 +93,9 @@ void TimerA2Capture_Init(void(*task1)(uint16_t time), void(*task2)(uint16_t time
   // bit2=X,           output this value in output mode 0
   // bit1=X,           capture overflow status
   // bit0=0,           clear capture/compare interrupt pending
-  TIMER_A2->CCTL[1] = 0x8910;
-  TIMER_A2->CCTL[2] = 0x8910;
-  TIMER_A2->CCTL[3] = 0x8910;
+  TIMER_A2->CCTL[1] = 0xC910;
+  TIMER_A2->CCTL[2] = 0xC910;
+  TIMER_A2->CCTL[3] = 0xC910;
   TIMER_A2->EX0 &= ~0x0007;        // configure for input clock divider /1
   NVIC->IP[3] = (NVIC->IP[3]&0xFFFF00FF)|0x00004000; // priority 2
 // interrupts enabled in the main program after all devices initialized

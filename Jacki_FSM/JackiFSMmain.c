@@ -41,43 +41,7 @@ uint32_t romTrk= 0x20000, Time, MainCount;
 #define BLUE      0x04
 #define CLEAR     0x00
 
-struct State {
-  uint8_t color;
-  void (*func)();                 // time to delay in 1ms
-  const struct State *next[5]; // Next if 2-bit input is 0-3
-};
-typedef const struct State State_t;
-
-#define Straight        &fsm[0]
-#define RightTurn       &fsm[1]
-#define LeftTurn        &fsm[2]
-#define CircleTurn      &fsm[3]
-#define FoundTreasure   &fsm[4]
-
-State_t *Spt;  // pointer to the current state
-
 uint8_t FWall,RWall,LWall;
-
-void Turn_Left(){
-  SysTick->CTRL = 0;
-  Motor_Forward(7000,7000);
-  Clock_Delay1us(5000);
-  Motor_Left(7000, 7000);
-  Clock_Delay1us(20000);
-  Motor_Forward(7000,7000);
-  Clock_Delay1us(5000);
-  SysTick->CTRL = 0x00000007;
-}
-void Turn_Right(){
-  SysTick->CTRL = 0;
-  Motor_Forward(7000,7000);
-  Clock_Delay1us(5000);
-  Motor_Right(7000,7000);
-  Clock_Delay1us(20000);
-  Motor_Forward(7000,7000);
-  Clock_Delay1us(5000);
-  SysTick->CTRL = 0x00000007;
-}
 
 void Turn_180(){
   SysTick->CTRL = 0;
@@ -126,37 +90,54 @@ void Travelling()
     oldError = error;
 }
 
+void Turn_Left(){
+  SysTick->CTRL = 0;
+  Motor_Left(6000,6000);
+  Clock_Delay1us(20000);
+  Motor_Forward(6000,6000);
+  Clock_Delay1us(5000);
+  SysTick->CTRL = 0x00000007;
+}
+
+void Turn_Right(){
+  SysTick->CTRL = 0;
+  Motor_Right(6000,6000);
+  Clock_Delay1us(20000);
+  Motor_Forward(7000,7000);
+  Clock_Delay1us(5000);
+  SysTick->CTRL = 0x00000007;
+}
+
 void Found_Treasure(){
 
 }
 
-State_t fsm[5] = {
-   {RED, &Travelling,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}}, // Straight
-   {GREEN, &Turn_Right,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}}, // RightTurn
-   {YELLOW, &Turn_Left,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}}, // LeftTurn
-   {BLUE, &Turn_180,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}}, //CircleTurn
-   {CLEAR, &Found_Treasure,{Straight, RightTurn, LeftTurn, CircleTurn,FoundTreasure}} //FoundTreasure
-};
-
-uint8_t StateSel(void){
+uint8_t StateSel(uint8_t pr){
     /*
     if(LineReading!= 0x3F){ // Treasure Found
-        return 4;
+       Found_Treasure();
+       AMAZING LIGHT SHOW WITH LED
     }
     */
-    if(FWall && RWall && LWall){ // Dead End
-        return 0; //this is bad!!
+    if(FWall && RWall && LWall && pr != 3){ // Dead End
+        Turn_180();
+        Port2_Output(BLUE);
+        return 3;
     }
     if (!FWall && RWall && LWall){ // Corridor
+        Travelling();
+        Port2_Output(RED);
         return 0;
     }
-
     if (RWall &!LWall){// 90 deg left
-        return 2;
-    }
-
-    if (!RWall &LWall){// 90 deg right
+        Turn_Left();
+        Port2_Output(YELLOW);
         return 1;
+    }
+    if (!RWall &LWall){// 90 deg right
+        Turn_Right();
+        Port2_Output(GREEN);
+        return 2;
     }
 }
 
@@ -256,64 +237,68 @@ void SysTick_Handler(void){ // every 1ms
         Reflectance_Start();
     }
     else if (Time % 5 == 1){
-        FWall = (Center > 0 ? 1 : 0);
-        RWall = (Right  > 0 ? 1 : 0);
-        LWall = (Left   > 0 ? 1 : 0);
         LineReading = Reflectance_End();
-        index = StateSel();
-        Spt=Spt->next[index];
-        (*Spt->func)();
-        Port2_Output(Spt->color);
     }
 
     Center = CenterConvert(nc);
     Left = LeftConvert(nl);
     Right = RightConvert(nr);
 
+    FWall = (Center > 0 ? 1 : 0);
+    RWall = (Right  > 0 ? 1 : 0);
+    LWall = (Left   > 0 ? 1 : 0);
+
     //sel function
     if(Time % 1000 == 0){
         EUSCIA0_OutString("\nDebug MSG\n");
         EUSCIA0_OutString("\nLeft\n");
 
-    EUSCIA0_OutUDec(Left); EUSCIA0_OutChar(LF);
-    EUSCIA0_OutUDec(nl); EUSCIA0_OutChar(LF);
-    EUSCIA0_OutString("\nCenter\n");
+        EUSCIA0_OutUDec(Left); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutUDec(nl); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutString("\nCenter\n");
 
-    EUSCIA0_OutUDec(Center); EUSCIA0_OutChar(LF);
-    EUSCIA0_OutUDec(nc); EUSCIA0_OutChar(LF);
-    EUSCIA0_OutString("\nRight\n");
+        EUSCIA0_OutUDec(Center); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutUDec(nc); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutString("\nRight\n");
 
-    EUSCIA0_OutUDec(Right); EUSCIA0_OutChar(LF);
-    EUSCIA0_OutUDec(nr); EUSCIA0_OutChar(LF);
-   // EUSCIA0_OutUDec(Right); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutUDec(Right); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutUDec(nr); EUSCIA0_OutChar(LF);
+       // EUSCIA0_OutUDec(Right); EUSCIA0_OutChar(LF);
     }
     Time++;
 }
 
-
-void Center_Handler(uint16_t timeIn)
+uint32_t ltime, rtime, ctime;
+bool rRise = true, cRise = true, lRise = true;
+void Center_Handler(uint32_t timeIn)
 {
-    nc = LPF_Calc2(timeIn);
+    if(cRise) ctime = timeIn;
+    else nc = LPF_Calc2(timeIn-ctime);
+    cRise = !cRise;
+    P3 -> OUT ^= 0x40;
 }
 
-void Left_Handler(uint16_t timeIn)
+void Left_Handler(uint32_t timeIn)
 {
-    nl = LPF_Calc3(timeIn);
-    LTIME = timeIn;
+    if(lRise) ltime = timeIn;
+    else nl = LPF_Calc3(timeIn-ltime);
+    lRise = !lRise;
 }
 
-void Right_Handler(uint16_t timeIn)
+void Right_Handler(uint32_t timeIn)
 {
-    nr = LPF_Calc(timeIn);
+    if(rRise) rtime = timeIn;
+    else nr = LPF_Calc(timeIn-rtime);
+    rRise = !rRise;
 }
 
 void Trigger_Init()
 {
     //Initialize P3.5 as the trigger (output)
-    P3 -> SEL0 &= ~0x20;
-    P3 -> SEL1 &= ~0x20;
-    P3 -> DIR  |= 0x20;
-    P3 -> OUT  &= ~0x20;
+    P3 -> SEL0 &= ~0x60;
+    P3 -> SEL1 &= ~0x60;
+    P3 -> DIR  |= 0x60;
+    P3 -> OUT  &= ~0x60;
 }
 
 void Trigger_Handler()
@@ -330,7 +315,7 @@ void Trigger_Handler()
     EnableInterrupts();
 
 }
-
+uint8_t prev = 0;
 void main(void){
 
     DisableInterrupts();
@@ -363,9 +348,8 @@ void main(void){
     Tachometer_Init();
     EnableInterrupts();
     //EUSCIA0_OutString("\nStarting\n");
-
-    Spt = Straight;
     while(1){
+        prev = StateSel(prev);
         WaitForInterrupt();
         MainCount++;
     }
