@@ -145,6 +145,11 @@
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/inc/UART1.c</locationURI>
 		</link>
+		<link>
+			<name>odometry.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/inc/odometry.c</locationURI>
+		</link>
 	</linkedResources>
 	<variableList>
 		<variable>

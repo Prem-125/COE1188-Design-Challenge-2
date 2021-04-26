@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include "msp.h"
 #include "../inc/SysTickInts.h"
 #include "../inc/Clock.h"
@@ -22,6 +23,7 @@
 #include "../inc/Tachometer.h"
 #include "../inc/TA2InputCapture.h"
 #include "../inc/EUSCIA0.h"
+#include "../inc/odometry.h"
 
 //CONSTANTS NEEDED FOR ENTIRE PROGRAM
 volatile uint32_t nr,nc,nl; // filtered ADC samples
@@ -55,11 +57,11 @@ void Port2_Output(uint8_t data){        // write all of P2 outputs
 //Variables needed for PID control
 uint16_t accumulator = 0;
 uint16_t oldError = 0;
-#define P 20
+#define P 50
 #define I 0
-#define D 0
+#define De -25
 #define BaseSpeed 6000
-#define DISTANCE_RIGHT_WALL 30
+#define DISTANCE_RIGHT_WALL 20
 uint16_t diff= 0;
 
 void Travelling()
@@ -71,7 +73,7 @@ void Travelling()
     diff = 0;
     diff += error * P;
     diff += accumulator * I;
-    diff += deltaError * D;
+    diff += deltaError * De;
     uint16_t lspeed = BaseSpeed + diff;
     uint16_t rspeed = BaseSpeed - diff;
     Motor_Forward(lspeed,rspeed);
@@ -80,24 +82,96 @@ void Travelling()
 }
 
 void Turn_Right(){
-    /*
-  SysTick->CTRL = 0;
-  Motor_Right(6000,6000);
-  Clock_Delay1us(20000);
-  Motor_Forward(7000,7000);
-  Clock_Delay1us(5000);
-  SysTick->CTRL = 0x00000007;
-  */
+
+    //Go straight for a sec
+    int32_t left;
+    int32_t right;
+    int32_t *leftTach = &left;
+    int32_t *rightTach = &right;
+    Tachometer_Get(NULL, NULL,leftTach, NULL, NULL, rightTach);
+    int32_t initLeft = *leftTach;
+    int32_t initRight = *rightTach;
+    int32_t deltaLeft = 0;
+    int32_t deltaRight = 0;
+    while(deltaLeft < 250 && deltaRight < 250)
+    {
+        Tachometer_Get(NULL, NULL,leftTach, NULL, NULL, rightTach);
+        deltaLeft = *leftTach -initLeft;
+        deltaRight = *rightTach - initRight;
+        Motor_Forward(3000,3000);
+    }
+
+    //Turn right
+    Tachometer_Get(NULL, NULL,leftTach, NULL, NULL, rightTach);
+    initRight = *rightTach;
+    deltaRight = 0;
+    while(deltaRight > -170)
+    {
+        Tachometer_Get(NULL, NULL,leftTach, NULL, NULL, rightTach);
+        deltaRight = *rightTach -initRight;
+        Motor_Right(3000,3000);
+    }
+
+    //Go straight for another sec
+    Tachometer_Get(NULL, NULL,leftTach, NULL, NULL, rightTach);
+    initLeft = *leftTach;
+    initRight = *rightTach;
+    deltaLeft = 0;
+    deltaRight = 0;
+    while(deltaLeft < 250 && deltaRight < 250)
+    {
+        Tachometer_Get(NULL, NULL,leftTach, NULL, NULL, rightTach);
+        deltaLeft = *leftTach -initLeft;
+        deltaRight = *rightTach - initRight;
+        Motor_Forward(3000,3000);
+    }
 }
 
-void Turn_Left(){/*
-  SysTick->CTRL = 0;
-  Motor_Left(6000,6000);
-  Clock_Delay1us(20000);
-  Motor_Forward(7000,7000);
-  Clock_Delay1us(5000);
-  SysTick->CTRL = 0x00000007;
-  */
+void Turn_Left(){
+
+    //Go straight for a sec
+    int32_t left;
+    int32_t right;
+    int32_t *leftTach = &left;
+    int32_t *rightTach = &right;
+    Tachometer_Get(NULL, NULL,leftTach, NULL, NULL, rightTach);
+    int32_t initLeft = *leftTach;
+    int32_t initRight = *rightTach;
+    int32_t deltaLeft = 0;
+    int32_t deltaRight = 0;
+    /*
+    while(deltaLeft < 250 && deltaRight < 250)
+    {
+        Tachometer_Get(NULL, NULL,leftTach, NULL, NULL, rightTach);
+        deltaLeft = *leftTach -initLeft;
+        deltaRight = *rightTach - initRight;
+        Motor_Forward(3000,3000);
+    }
+    */
+    //Turn left
+    Tachometer_Get(NULL, NULL,leftTach, NULL, NULL, rightTach);
+    initLeft = *leftTach;
+    deltaLeft = 0;
+    while(deltaLeft > -170)
+    {
+        Tachometer_Get(NULL, NULL,leftTach, NULL, NULL, rightTach);
+        deltaLeft = *leftTach -initLeft;
+        Motor_Left(3000,3000);
+    }
+
+    //Go straight for another sec
+    Tachometer_Get(NULL, NULL,leftTach, NULL, NULL, rightTach);
+    initLeft = *leftTach;
+    initRight = *rightTach;
+    deltaLeft = 0;
+    deltaRight = 0;
+    while(deltaLeft < 250 && deltaRight < 250)
+    {
+        Tachometer_Get(NULL, NULL,leftTach, NULL, NULL, rightTach);
+        deltaLeft = *leftTach -initLeft;
+        deltaRight = *rightTach - initRight;
+        Motor_Forward(3000,3000);
+    }
 }
 
 void Found_Treasure(){
@@ -160,10 +234,12 @@ void SysTick_Handler(void){ // every 1ms
         EUSCIA0_OutString("\nRight\n");
         EUSCIA0_OutUDec(Right); EUSCIA0_OutChar(LF);
         EUSCIA0_OutUDec(nr); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutUDec(RWall); EUSCIA0_OutChar(LF);
 
         EUSCIA0_OutString("\nCenter\n");
         EUSCIA0_OutUDec(Center); EUSCIA0_OutChar(LF);
         EUSCIA0_OutUDec(nc); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutUDec(FWall); EUSCIA0_OutChar(LF);
     }
     Time++;
 }
@@ -213,20 +289,20 @@ void Trigger_Handler()
 void Navigate_Maze(){
 
 
-    if(!FWall && RWall) //Straight
+    if(FWall == 0 && RWall == 1) //Straight
     {
-        Travelling();
         Port2_Output(RED);
+        Travelling();
     }
-    else if(FWall && RWall) //Turn Left
+    else if(FWall == 1 && RWall == 1) //Turn Left
     {
-        Turn_Left();
         Port2_Output(YELLOW);
+        Turn_Left();
     }
-    else if(!RWall) //Turn Left
+    else if(RWall == 0) //Turn Left
     {
-        Turn_Right();
         Port2_Output(GREEN);
+        Turn_Right();
     }
     /*else if(LineReading!= 0x3F){ // Treasure Found
            Found_Treasure();
@@ -286,13 +362,18 @@ void main(void){
     //Initialize the tachometer for cleaner turns
     Tachometer_Init();
 
+    FWall = 0;
+    RWall = 1;
+
+
     //Enable interrupts
     EnableInterrupts();
 
     while(1){
 
         //Navigate the maze
-        Navigate_Maze();
+        //Navigate_Maze();
+        Travelling();
 
         //Wait for interrupts to come
         WaitForInterrupt();

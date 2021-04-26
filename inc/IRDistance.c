@@ -62,8 +62,8 @@ int32_t LeftConvert(int32_t nl){        // returns left distance in mm
 #define Ac 1195159
 #define Bc -1058
 #define Cc 40
-#define IRmaxc 20
-#define IRminc 10
+#define IRmaxc 40
+#define IRminc 5
 int32_t CenterConvert(int32_t nc){   // returns center distance in mm
   int32_t sum = (nc)*.0034;
   return (sum > IRmaxc || sum < IRminc) ? 0 : sum;
