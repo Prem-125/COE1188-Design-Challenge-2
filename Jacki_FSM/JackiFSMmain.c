@@ -60,7 +60,7 @@ uint16_t oldError = 0;
 #define P 50
 #define I 0
 #define De -25
-#define BaseSpeed 4000
+#define BaseSpeed 3000
 #define DISTANCE_RIGHT_WALL 25
 uint16_t diff= 0;
 
@@ -206,6 +206,12 @@ void Center_Handler(int32_t timeIn1)
     P3 -> OUT ^= 0x40;
 }
 
+void Left_Handler(int32_t timeIn2)
+{
+    if(lRise) ltime = timeIn2;
+    else nl = LPF_Calc(abs(timeIn2-ltime));
+    lRise = !lRise;
+}
 
 void Right_Handler(int32_t timeIn3)
 {
@@ -213,7 +219,6 @@ void Right_Handler(int32_t timeIn3)
     else nr = LPF_Calc(abs(timeIn3-rtime));
     rRise = !rRise;
 }
-
 
 void Trigger_Handler()
 {
@@ -226,6 +231,7 @@ void Trigger_Handler()
     P3 -> OUT &= ~0x20;
     //Reset timer
     TimerA2Capture_Init(&Center_Handler, &Right_Handler);
+    //TimerA2Capture_Init(&Center_Handler, &Right_Handler, &Left_Handler);
     EnableInterrupts();
 
 }
@@ -254,7 +260,8 @@ void PORT4_IRQHandler(void){
 //SYSTICK HANDLER FOR MEASURING ULTRASONIC AND REFLECTANCE SENSORS
 
 //Variables to store whether a wall is present or not
-uint8_t FWall,RWall;
+uint8_t FWall,RWall,LWall;
+
 void SysTick_Handler(void){ // every 1ms
     if (Time % 5 == 0){
         //Start charging capacitors in reflectance sensor
@@ -268,10 +275,12 @@ void SysTick_Handler(void){ // every 1ms
     //Get the converted values of center and right
     Center = CenterConvert(nc);
     Right = RightConvert(nr);
+    //Left = LeftConvert(nl);
 
     //Determines if a wall is detected or not
     FWall = (Center > 0 ? 1 : 0);
     RWall = (Right  > 0 ? 1 : 0);
+    //LWall = (Left  > 0 ? 1 : 0);
 
     //Display results to serial port
     if(Time % 1000 == 0){
@@ -287,6 +296,12 @@ void SysTick_Handler(void){ // every 1ms
         EUSCIA0_OutUDec(Center); EUSCIA0_OutChar(LF);
         EUSCIA0_OutUDec(nc); EUSCIA0_OutChar(LF);
         EUSCIA0_OutUDec(FWall); EUSCIA0_OutChar(LF);
+
+//        EUSCIA0_OutString("\nLeft\n");
+//        EUSCIA0_OutUDec(Left); EUSCIA0_OutChar(LF);
+//        EUSCIA0_OutUDec(nl); EUSCIA0_OutChar(LF);
+//        EUSCIA0_OutUDec(LWall); EUSCIA0_OutChar(LF);
+
     }
     Time++;
 }
@@ -327,7 +342,6 @@ void Navigate_Maze(){
     else
     {
         Travelling();
-        //Port2_Output(PURPLE);
     }
 
 }
@@ -432,6 +446,7 @@ void main(void){
 
     //Intialize the timer for Wall Sensors (5.6 = center, 5.7 = right)
     TimerA2Capture_Init(&Center_Handler, &Right_Handler);
+    //TimerA2Capture_Init(&Center_Handler, &Right_Handler, &Left_Handler);
 
     //Enable UART Comms
     EUSCIA0_Init();
@@ -440,7 +455,7 @@ void main(void){
     Time = LineReading = 0;
 
     //Initliaze Systick to have a frequency of 10 us
-    SysTick_Init(48000, 0);
+    SysTick_Init(24000, 0);
 
     //Initialize the reflectance sensors
     Reflectance_Init();
@@ -456,6 +471,7 @@ void main(void){
 
     FWall = 0;
     RWall = 1;
+    // LWall = 1;
 
     // BLE
     //BLE_Init();
