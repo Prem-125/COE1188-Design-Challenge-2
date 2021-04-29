@@ -437,6 +437,7 @@ void main(void){
     //Low pass filter initializers
     LPF_Init(20, 5); //Right
     LPF_Init2(0, 5); //Center
+    LPF_Init(20, 5); //Left
 
     //Configure the trigger pin that drives the ultrasonic sensors
     Trigger_Init();

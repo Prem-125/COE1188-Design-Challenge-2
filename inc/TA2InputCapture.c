@@ -44,7 +44,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 void ta2dummy(int32_t t){};       // dummy function
 void (*CaptureTaskk1)(int32_t time) = ta2dummy;// user function
 void (*CaptureTaskk2)(int32_t time) = ta2dummy;// user function
-//void (*CaptureTaskk3)(int32_t time) = ta2dummy;// user function
+void (*CaptureTaskk3)(int32_t time) = ta2dummy;// user function
 
 //------------TimerA2Capture_Init------------
 // Initialize Timer A2 in edge time mode to request interrupts on
@@ -58,12 +58,12 @@ void TimerA2Capture_Init(void(*task1)(int32_t time), void(*task2)(int32_t time),
   sr = StartCritical();
   CaptureTaskk1 = task1;             // user function
   CaptureTaskk2 = task2;
-  //CaptureTaskk3 = task3;
+  CaptureTaskk3 = task3;
 
   //P5.6 = 1, P5.7 = 2, P5.5 = 3, P6.7 = 3
-  P5->SEL0 |= 0xC0;
-  P5->SEL1 &= ~0xC0;               // configure P5.6 as TA2CCP1
-  P5->DIR &= ~0xC0;                // make P5.6 in
+  P5->SEL0 |= 0xE0;
+  P5->SEL1 &= ~0xE0;               // configure P5.6 as TA2CCP1
+  P5->DIR &= ~0xE0;                // make P5.6 in
   TIMER_A2->CTL &= ~0x0030;        // halt Timer A2
   // bits15-10=XXXXXX, reserved
   // bits9-8=10,       clock source to SMCLK
@@ -88,6 +88,7 @@ void TimerA2Capture_Init(void(*task1)(int32_t time), void(*task2)(int32_t time),
   // bit0=0,           clear capture/compare interrupt pending
   TIMER_A2->CCTL[1] = 0xC910;
   TIMER_A2->CCTL[2] = 0xC910;
+  TIMER_A2->CCTL[3] = 0xC910;
   TIMER_A2->EX0 &= ~0x0007;        // configure for input clock divider /1
   NVIC->IP[3] = (NVIC->IP[3]&0xFFFF00FF)|0x00004000; // priority 2
 // interrupts enabled in the main program after all devices initialized
@@ -113,4 +114,8 @@ void TA2_N_IRQHandler(void){
             TIMER_A2->CCTL[2] &= ~0x0001;  // acknowledge capture/compare interrupt 2
             (*CaptureTaskk2)(TIMER_A2->CCR[2]);// execute user task
     }
+    if(((TIMER_A2->CCTL[3])&0x0001) != 0){
+                TIMER_A2->CCTL[3] &= ~0x0001;  // acknowledge capture/compare interrupt 2
+                (*CaptureTaskk3)(TIMER_A2->CCR[3]);// execute user task
+        }
 }
