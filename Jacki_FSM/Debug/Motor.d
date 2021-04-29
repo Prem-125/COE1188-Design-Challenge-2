@@ -1,6 +1,6 @@
 # FIXED
 
-Motor.obj: C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2-new_code/inc/Motor.c
+Motor.obj: C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2/inc/Motor.c
 Motor.obj: C:/ti/ccs1020/ccs/tools/compiler/ti-cgt-arm_20.2.2.LTS/include/stdint.h
 Motor.obj: C:/ti/ccs1020/ccs/tools/compiler/ti-cgt-arm_20.2.2.LTS/include/_ti_config.h
 Motor.obj: C:/ti/ccs1020/ccs/tools/compiler/ti-cgt-arm_20.2.2.LTS/include/linkage.h
@@ -19,10 +19,10 @@ Motor.obj: C:/ti/ccs1020/ccs/ccs_base/arm/include/CMSIS/core_cm4.h
 Motor.obj: C:/ti/ccs1020/ccs/ccs_base/arm/include/CMSIS/cmsis_compiler.h
 Motor.obj: C:/ti/ccs1020/ccs/ccs_base/arm/include/CMSIS/cmsis_ccs.h
 Motor.obj: C:/ti/ccs1020/ccs/ccs_base/arm/include/system_msp432p401r.h
-Motor.obj: C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2-new_code/inc/../inc/CortexM.h
-Motor.obj: C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2-new_code/inc/../inc/PWM.h
+Motor.obj: C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2/inc/../inc/CortexM.h
+Motor.obj: C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2/inc/../inc/PWM.h
 
-C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2-new_code/inc/Motor.c: 
+C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2/inc/Motor.c: 
 C:/ti/ccs1020/ccs/tools/compiler/ti-cgt-arm_20.2.2.LTS/include/stdint.h: 
 C:/ti/ccs1020/ccs/tools/compiler/ti-cgt-arm_20.2.2.LTS/include/_ti_config.h: 
 C:/ti/ccs1020/ccs/tools/compiler/ti-cgt-arm_20.2.2.LTS/include/linkage.h: 
@@ -41,5 +41,5 @@ C:/ti/ccs1020/ccs/ccs_base/arm/include/CMSIS/core_cm4.h:
 C:/ti/ccs1020/ccs/ccs_base/arm/include/CMSIS/cmsis_compiler.h: 
 C:/ti/ccs1020/ccs/ccs_base/arm/include/CMSIS/cmsis_ccs.h: 
 C:/ti/ccs1020/ccs/ccs_base/arm/include/system_msp432p401r.h: 
-C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2-new_code/inc/../inc/CortexM.h: 
-C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2-new_code/inc/../inc/PWM.h: 
+C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2/inc/../inc/CortexM.h: 
+C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2/inc/../inc/PWM.h: 

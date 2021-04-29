@@ -10,32 +10,23 @@ GEN_OPTS__FLAG :=
 GEN_CMDS__FLAG := 
 
 ORDERED_OBJS += \
-"./ADC14.obj" \
 "./AP.obj" \
 "./Bump.obj" \
 "./Clock.obj" \
 "./CortexM.obj" \
-"./EUSCIA0.obj" \
-"./FIFO0.obj" \
 "./FlashProgram.obj" \
 "./GPIO.obj" \
-"./IRDistance.obj" \
 "./JackiFSMmain.obj" \
-"./LPF.obj" \
 "./LaunchPad.obj" \
 "./Motor.obj" \
 "./PWM.obj" \
 "./Reflectance.obj" \
-"./SSD1306.obj" \
 "./SysTickInts.obj" \
-"./TA2InputCapture.obj" \
 "./TA3InputCapture.obj" \
 "./TExaS.obj" \
-"./Tachometer.obj" \
-"./TimerA0.obj" \
 "./TimerA1.obj" \
+"./UART0.obj" \
 "./UART1.obj" \
-"./odometry.obj" \
 "./startup_msp432p401r_ccs.obj" \
 "./system_msp432p401r.obj" \
 "../msp432p401r.cmd" \
@@ -181,8 +172,8 @@ Jacki_FSM.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "ADC14.obj" "AP.obj" "Bump.obj" "Clock.obj" "CortexM.obj" "EUSCIA0.obj" "FIFO0.obj" "FlashProgram.obj" "GPIO.obj" "IRDistance.obj" "JackiFSMmain.obj" "LPF.obj" "LaunchPad.obj" "Motor.obj" "PWM.obj" "Reflectance.obj" "SSD1306.obj" "SysTickInts.obj" "TA2InputCapture.obj" "TA3InputCapture.obj" "TExaS.obj" "Tachometer.obj" "TimerA0.obj" "TimerA1.obj" "UART1.obj" "odometry.obj" "startup_msp432p401r_ccs.obj" "system_msp432p401r.obj" 
-	-$(RM) "ADC14.d" "AP.d" "Bump.d" "Clock.d" "CortexM.d" "EUSCIA0.d" "FIFO0.d" "FlashProgram.d" "GPIO.d" "IRDistance.d" "JackiFSMmain.d" "LPF.d" "LaunchPad.d" "Motor.d" "PWM.d" "Reflectance.d" "SSD1306.d" "SysTickInts.d" "TA2InputCapture.d" "TA3InputCapture.d" "TExaS.d" "Tachometer.d" "TimerA0.d" "TimerA1.d" "UART1.d" "odometry.d" "startup_msp432p401r_ccs.d" "system_msp432p401r.d" 
+	-$(RM) "AP.obj" "Bump.obj" "Clock.obj" "CortexM.obj" "FlashProgram.obj" "GPIO.obj" "JackiFSMmain.obj" "LaunchPad.obj" "Motor.obj" "PWM.obj" "Reflectance.obj" "SysTickInts.obj" "TA3InputCapture.obj" "TExaS.obj" "TimerA1.obj" "UART0.obj" "UART1.obj" "startup_msp432p401r_ccs.obj" "system_msp432p401r.obj" 
+	-$(RM) "AP.d" "Bump.d" "Clock.d" "CortexM.d" "FlashProgram.d" "GPIO.d" "JackiFSMmain.d" "LaunchPad.d" "Motor.d" "PWM.d" "Reflectance.d" "SysTickInts.d" "TA3InputCapture.d" "TExaS.d" "TimerA1.d" "UART0.d" "UART1.d" "startup_msp432p401r_ccs.d" "system_msp432p401r.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

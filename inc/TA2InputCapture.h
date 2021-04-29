@@ -60,6 +60,6 @@ policies, either expressed or implied, of the FreeBSD Project.
  * @note  Assumes low-speed subsystem master clock is 12 MHz
  * @brief  Initialize Timer A2
  */
-void TimerA2Capture_Init(void(*task1)(int32_t time), void(*task2)(int32_t time)); //void(*task3)(int32_t time));
+void TimerA2Capture_Init(void(*task1)(int32_t time), void(*task2)(int32_t time), void(*task3)(int32_t time));
 
 #endif /* TA2INPUTCAPTURE_H_ */

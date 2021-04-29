@@ -78,7 +78,6 @@ void Motor_InitSimple(void){
   P3->DIR |= 0xC0;    // make pins out
   P3->OUT &= ~0xC0;   // low current sleep mode
   SysTick_Init();
-  Bump_Init();
 }
 
 void Motor_StopSimple(void){

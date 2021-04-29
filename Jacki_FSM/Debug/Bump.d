@@ -1,6 +1,6 @@
 # FIXED
 
-Bump.obj: C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2-new_code/inc/Bump.c
+Bump.obj: C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2/inc/Bump.c
 Bump.obj: C:/ti/ccs1020/ccs/tools/compiler/ti-cgt-arm_20.2.2.LTS/include/stdint.h
 Bump.obj: C:/ti/ccs1020/ccs/tools/compiler/ti-cgt-arm_20.2.2.LTS/include/_ti_config.h
 Bump.obj: C:/ti/ccs1020/ccs/tools/compiler/ti-cgt-arm_20.2.2.LTS/include/linkage.h
@@ -20,7 +20,7 @@ Bump.obj: C:/ti/ccs1020/ccs/ccs_base/arm/include/CMSIS/cmsis_compiler.h
 Bump.obj: C:/ti/ccs1020/ccs/ccs_base/arm/include/CMSIS/cmsis_ccs.h
 Bump.obj: C:/ti/ccs1020/ccs/ccs_base/arm/include/system_msp432p401r.h
 
-C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2-new_code/inc/Bump.c: 
+C:/Users/mariamysliwiec/ece1188/COE1188-Design-Challenge-2/inc/Bump.c: 
 C:/ti/ccs1020/ccs/tools/compiler/ti-cgt-arm_20.2.2.LTS/include/stdint.h: 
 C:/ti/ccs1020/ccs/tools/compiler/ti-cgt-arm_20.2.2.LTS/include/_ti_config.h: 
 C:/ti/ccs1020/ccs/tools/compiler/ti-cgt-arm_20.2.2.LTS/include/linkage.h: 

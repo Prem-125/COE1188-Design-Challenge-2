@@ -230,8 +230,8 @@ void Trigger_Handler()
     Clock_Delay1us(1000);
     P3 -> OUT &= ~0x20;
     //Reset timer
-    TimerA2Capture_Init(&Center_Handler, &Right_Handler);
-    //TimerA2Capture_Init(&Center_Handler, &Right_Handler, &Left_Handler);
+    //TimerA2Capture_Init(&Center_Handler, &Right_Handler);
+    TimerA2Capture_Init(&Center_Handler, &Right_Handler, &Left_Handler);
     EnableInterrupts();
 
 }
@@ -275,12 +275,12 @@ void SysTick_Handler(void){ // every 1ms
     //Get the converted values of center and right
     Center = CenterConvert(nc);
     Right = RightConvert(nr);
-    //Left = LeftConvert(nl);
+    Left = LeftConvert(nl);
 
     //Determines if a wall is detected or not
     FWall = (Center > 0 ? 1 : 0);
     RWall = (Right  > 0 ? 1 : 0);
-    //LWall = (Left  > 0 ? 1 : 0);
+    LWall = (Left  > 0 ? 1 : 0);
 
     //Display results to serial port
     if(Time % 1000 == 0){
@@ -297,10 +297,10 @@ void SysTick_Handler(void){ // every 1ms
         EUSCIA0_OutUDec(nc); EUSCIA0_OutChar(LF);
         EUSCIA0_OutUDec(FWall); EUSCIA0_OutChar(LF);
 
-//        EUSCIA0_OutString("\nLeft\n");
-//        EUSCIA0_OutUDec(Left); EUSCIA0_OutChar(LF);
-//        EUSCIA0_OutUDec(nl); EUSCIA0_OutChar(LF);
-//        EUSCIA0_OutUDec(LWall); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutString("\nLeft\n");
+        EUSCIA0_OutUDec(Left); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutUDec(nl); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutUDec(LWall); EUSCIA0_OutChar(LF);
 
     }
     Time++;
@@ -321,6 +321,11 @@ void Navigate_Maze(){
     if(FWall == 0 && RWall == 1) //Straight
     {
         Port2_Output(RED);
+        Travelling();
+    }
+    else if (FWall == 0 && LWall == 1) // other straight
+    {
+        Port2_Output(CLEAR);
         Travelling();
     }
     else if(FWall == 1 && RWall == 1) //Turn Left
@@ -445,8 +450,8 @@ void main(void){
     TimerA1_Init(&Trigger_Handler, 65535);
 
     //Intialize the timer for Wall Sensors (5.6 = center, 5.7 = right)
-    TimerA2Capture_Init(&Center_Handler, &Right_Handler);
-    //TimerA2Capture_Init(&Center_Handler, &Right_Handler, &Left_Handler);
+    //TimerA2Capture_Init(&Center_Handler, &Right_Handler);
+    TimerA2Capture_Init(&Center_Handler, &Right_Handler, &Left_Handler);
 
     //Enable UART Comms
     EUSCIA0_Init();
@@ -471,7 +476,7 @@ void main(void){
 
     FWall = 0;
     RWall = 1;
-    // LWall = 1;
+    LWall = 1;
 
     // BLE
     //BLE_Init();
