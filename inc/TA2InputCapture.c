@@ -60,10 +60,13 @@ void TimerA2Capture_Init(void(*task1)(int32_t time), void(*task2)(int32_t time),
   CaptureTaskk2 = task2;
   CaptureTaskk3 = task3;
 
-  //P5.6 = 1, P5.7 = 2, P5.5 = 3, P6.7 = 3
-  P5->SEL0 |= 0xE0;
-  P5->SEL1 &= ~0xE0;               // configure P5.6 as TA2CCP1
-  P5->DIR &= ~0xE0;                // make P5.6 in
+  //P5.6 = 1, P5.7 = 2, P6.7 = 3
+  P5->SEL0 |= 0xC0;
+  P5->SEL1 &= ~0xC0;               // configure P5.6 as TA2CCP1
+  P5->DIR &= ~0xC0;                // make P5.6 in
+  P6->SEL0 |= 0x80;
+  P6->SEL1 &= ~0x80;               // configure P5.6 as TA2CCP1
+  P6->DIR &= ~0x80;                // make P5.6 in
   TIMER_A2->CTL &= ~0x0030;        // halt Timer A2
   // bits15-10=XXXXXX, reserved
   // bits9-8=10,       clock source to SMCLK
