@@ -11,7 +11,6 @@
  * @warning   AS-IS
  * @note      For more information see  http://users.ece.utexas.edu/~valvano/
  * @date      June 28, 2019
-
 <table>
 <caption id="Bump_ports4">Six Bump sensors</caption>
 <tr><th>Pin  <th>Sensor
@@ -29,19 +28,15 @@
    Jonathan W. Valvano, ISBN: 9781074544300, copyright (c) 2019
  For more information about my classes, my research, and my books, see
  http://users.ece.utexas.edu/~valvano/
-
 Simplified BSD License (FreeBSD License)
 Copyright (c) 2019, Jonathan Valvano, All rights reserved.
-
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
-
 1. Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -52,7 +47,6 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
 AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 The views and conclusions contained in the software and documentation are
 those of the authors and should not be interpreted as representing official
 policies, either expressed or implied, of the FreeBSD Project.
@@ -67,7 +61,7 @@ policies, either expressed or implied, of the FreeBSD Project.
  * @return none
  * @brief  Initialize Bump sensors
  */
-void Bump_Init(void);
+void Bump_Init(void(*task)(uint8_t));
 
 /**
  * Read current state of 6 bump switches<br>
@@ -85,4 +79,3 @@ void Bump_Init(void);
  * @brief  Read current state of 6 switches
  */
 uint8_t Bump_Read(void);
-
