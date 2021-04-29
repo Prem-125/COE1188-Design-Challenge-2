@@ -60,12 +60,13 @@ uint16_t oldError = 0;
 #define P 50
 #define I 0
 #define De -25
-#define BaseSpeed 6000
-#define DISTANCE_RIGHT_WALL 20
+#define BaseSpeed 3000
+#define DISTANCE_RIGHT_WALL 25
 uint16_t diff= 0;
 
 void Travelling()
 {
+    Port2_Output(GREEN);
     uint16_t error = Right - DISTANCE_RIGHT_WALL;
     accumulator += error;
     uint16_t deltaError = error - oldError;
@@ -93,6 +94,7 @@ void Turn_Right(){
     int32_t initRight = *rightTach;
     int32_t deltaLeft = 0;
     int32_t deltaRight = 0;
+    Port2_Output(RED);
     while(deltaLeft < 250 && deltaRight < 250)
     {
         Tachometer_Get(NULL, NULL,leftTach, NULL, NULL, rightTach);
@@ -139,6 +141,7 @@ void Turn_Left(){
     int32_t initRight = *rightTach;
     int32_t deltaLeft = 0;
     int32_t deltaRight = 0;
+    Port2_Output(YELLOW);
     /*
     while(deltaLeft < 250 && deltaRight < 250)
     {
@@ -189,12 +192,62 @@ void Found_Treasure(){
     }
 }
 
+void Task(void){
+    //hi
+}
+
+int32_t ltime, rtime, ctime;
+bool rRise = true, cRise = true, lRise = true;
+void Center_Handler(int32_t timeIn1)
+{
+    if(cRise) ctime = timeIn1;
+    else nc = LPF_Calc2(abs(timeIn1-ctime));
+    cRise = !cRise;
+    P3 -> OUT ^= 0x40;
+}
+
+void Left_Handler(int32_t timeIn2)
+{
+    if(lRise) ltime = timeIn2;
+    else nl = LPF_Calc(abs(timeIn2-ltime));
+    lRise = !lRise;
+}
+
+void Right_Handler(int32_t timeIn3)
+{
+    if(rRise) rtime = timeIn3;
+    else nr = LPF_Calc(abs(timeIn3-rtime));
+    rRise = !rRise;
+}
+
+void Trigger_Handler()
+{
+    DisableInterrupts();
+
+    P3 -> OUT &= ~0x20;
+    Clock_Delay1us(2);
+    P3 -> OUT |= 0x20;
+    Clock_Delay1us(1000);
+    P3 -> OUT &= ~0x20;
+    //Reset timer
+    //TimerA2Capture_Init(&Center_Handler, &Right_Handler);
+    TimerA2Capture_Init(&Center_Handler, &Right_Handler, &Left_Handler);
+    EnableInterrupts();
+
+}
+
 //FUNCTION TO HANDLE THE BUMP SENSORS
 void HandleCollision(uint8_t bump){
     if(bump != 0x3F)
     {
-        Motor_Backward(2000,2000);
-        Clock_Delay1ms(500);
+        //Stop the timer
+        TimerA0_Stop();
+        TimerA1_Stop();
+        Port2_Output(BLUE);
+        Motor_Backward(3000,3000);
+        Clock_Delay1ms(750);
+        TimerA0_Init(&Task, 500);
+        TimerA1_Init(&Trigger_Handler, 65535);
     }
 
 }
@@ -207,7 +260,8 @@ void PORT4_IRQHandler(void){
 //SYSTICK HANDLER FOR MEASURING ULTRASONIC AND REFLECTANCE SENSORS
 
 //Variables to store whether a wall is present or not
-uint8_t FWall,RWall;
+uint8_t FWall,RWall,LWall;
+
 void SysTick_Handler(void){ // every 1ms
     if (Time % 5 == 0){
         //Start charging capacitors in reflectance sensor
@@ -221,10 +275,12 @@ void SysTick_Handler(void){ // every 1ms
     //Get the converted values of center and right
     Center = CenterConvert(nc);
     Right = RightConvert(nr);
+    Left = LeftConvert(nl);
 
     //Determines if a wall is detected or not
     FWall = (Center > 0 ? 1 : 0);
     RWall = (Right  > 0 ? 1 : 0);
+    LWall = (Left  > 0 ? 1 : 0);
 
     //Display results to serial port
     if(Time % 1000 == 0){
@@ -240,26 +296,14 @@ void SysTick_Handler(void){ // every 1ms
         EUSCIA0_OutUDec(Center); EUSCIA0_OutChar(LF);
         EUSCIA0_OutUDec(nc); EUSCIA0_OutChar(LF);
         EUSCIA0_OutUDec(FWall); EUSCIA0_OutChar(LF);
+
+        EUSCIA0_OutString("\nLeft\n");
+        EUSCIA0_OutUDec(Left); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutUDec(nl); EUSCIA0_OutChar(LF);
+        EUSCIA0_OutUDec(LWall); EUSCIA0_OutChar(LF);
+
     }
     Time++;
-}
-
-int32_t ltime, rtime, ctime;
-bool rRise = true, cRise = true, lRise = true;
-void Center_Handler(int32_t timeIn1)
-{
-    if(cRise) ctime = timeIn1;
-    else nc = LPF_Calc2(abs(timeIn1-ctime));
-    cRise = !cRise;
-    P3 -> OUT ^= 0x40;
-}
-
-
-void Right_Handler(int32_t timeIn3)
-{
-    if(rRise) rtime = timeIn3;
-    else nr = LPF_Calc(abs(timeIn3-rtime));
-    rRise = !rRise;
 }
 
 void Trigger_Init()
@@ -271,21 +315,6 @@ void Trigger_Init()
     P3 -> OUT  &= ~0x60;
 }
 
-void Trigger_Handler()
-{
-    DisableInterrupts();
-
-    P3 -> OUT &= ~0x20;
-    Clock_Delay1us(2);
-    P3 -> OUT |= 0x20;
-    Clock_Delay1us(1000);
-    P3 -> OUT &= ~0x20;
-    //Reset timer
-    TimerA2Capture_Init(&Center_Handler, &Right_Handler);
-    EnableInterrupts();
-
-}
-
 void Navigate_Maze(){
 
 
@@ -294,15 +323,22 @@ void Navigate_Maze(){
         Port2_Output(RED);
         Travelling();
     }
+    else if (FWall == 0 && LWall == 1) // other straight
+    {
+        Port2_Output(CLEAR);
+        Travelling();
+    }
     else if(FWall == 1 && RWall == 1) //Turn Left
     {
         Port2_Output(YELLOW);
         Turn_Left();
+        Travelling();
     }
-    else if(RWall == 0) //Turn Left
+    else if(RWall == 0) //Turn Right
     {
         Port2_Output(GREEN);
         Turn_Right();
+        Travelling();
     }
     /*else if(LineReading!= 0x3F){ // Treasure Found
            Found_Treasure();
@@ -311,10 +347,83 @@ void Navigate_Maze(){
     else
     {
         Travelling();
-        Port2_Output(BLUE);
     }
 
 }
+
+// BLUETOOTH
+// BLE variables
+//uint8_t JackiCommand=0;
+//uint16_t JackiSpeed=0;
+//
+//void OutValue(char *label,uint32_t value){
+//  UART0_OutString(label);
+//  UART0_OutUHex(value);
+//}
+//
+//void ReadCommand(void){ // called on a SNP Characteristic Read Indication for characteristic JackiCommand
+//  OutValue("\n\rRead JackiCommand=",JackiCommand);
+//}
+//
+//void RunJacki(void){
+//  if((JackiCommand==0)||(JackiCommand>4)){
+//    JackiCommand = 0;
+//    Motor_Stop();
+//  }
+//  if(JackiSpeed>14000){
+//    JackiSpeed = 1000;
+//  }
+//  if(JackiCommand==1){
+//    Motor_Forward(JackiSpeed,JackiSpeed);
+//  }
+//  if(JackiCommand==2){
+//    Motor_Backward(JackiSpeed/2,JackiSpeed/2);
+//    //time=0;
+//  }
+//  if(JackiCommand==3){
+//    Motor_Right(JackiSpeed/2,JackiSpeed/2);
+//    //time=0;
+//  }
+//  if(JackiCommand==4){
+//    Motor_Left(JackiSpeed/2,JackiSpeed/2);
+//    //time=0;
+//  }
+//}
+//
+//void WriteCommand(void){ // called on a SNP Characteristic Write Indication on characteristic JackiCommand
+//  OutValue("\n\rWrite JackiCommand=",JackiCommand);
+//  RunJacki();
+//}
+//
+//void ReadJackiSpeed(void){ // called on a SNP Characteristic Read Indication for characteristic JackiSpeed
+//  OutValue("\n\rRead JackiSpeed=",JackiSpeed);
+//}
+//
+//void WriteJackiSpeed(void){  // called on a SNP Characteristic Write Indication on characteristic JackiSpeed
+//  OutValue("\n\rJackiSpeed=",JackiSpeed);
+//  RunJacki();
+//}
+//
+//void BLE_Init(void){
+//    volatile int r;
+//    UART0_Init();
+//    EnableInterrupts();
+//    UART0_OutString("\n\rJacki test project - MSP432-CC2650\n\r");
+//    r = AP_Init();
+//    AP_AddService(0xFFF0);
+//    //------------------------
+//    JackiCommand = 0;  // read/write parameter
+//    AP_AddCharacteristic(0xFFF1,1,&JackiCommand,0x03,0x0A,"JackiCommand",&ReadCommand,&WriteCommand);
+//    //------------------------
+////    JackiLineSensor = Reflectance_End(); // read only parameter (get from line sensors)
+////    AP_AddCharacteristic(0xFFF2,1,&JackiLineSensor,0x01,0x02,"JackiLineSensor",&ReadJackiLineSensor,0);
+//    //------------------------
+//    JackiSpeed = 100;   // read/write parameter
+//    AP_AddCharacteristic(0xFFF3,2,&JackiSpeed,0x03,0x0A,"JackiSpeed",&ReadJackiSpeed,&WriteJackiSpeed);
+//    //------------------------
+//    AP_RegisterService();
+//    AP_StartAdvertisementJacki();
+//}
 
 uint8_t prev = 0;
 void main(void){
@@ -332,11 +441,17 @@ void main(void){
     //Configure the trigger pin that drives the ultrasonic sensors
     Trigger_Init();
 
+    //Initialize the bump sensors (although they will not be used)
+    Bump_Init(&HandleCollision);
+
+    TimerA0_Init(&Task, 500);
+
     //Initliaze the timer that handles the motors
     TimerA1_Init(&Trigger_Handler, 65535);
 
     //Intialize the timer for Wall Sensors (5.6 = center, 5.7 = right)
-    TimerA2Capture_Init(&Center_Handler, &Right_Handler);
+    //TimerA2Capture_Init(&Center_Handler, &Right_Handler);
+    TimerA2Capture_Init(&Center_Handler, &Right_Handler, &Left_Handler);
 
     //Enable UART Comms
     EUSCIA0_Init();
@@ -345,7 +460,7 @@ void main(void){
     Time = LineReading = 0;
 
     //Initliaze Systick to have a frequency of 10 us
-    SysTick_Init(48000, 0);
+    SysTick_Init(24000, 0);
 
     //Initialize the reflectance sensors
     Reflectance_Init();
@@ -356,15 +471,15 @@ void main(void){
     //Initialize the motors
     Motor_Init();
 
-    //Initialize the bump sensors (although they will not be used)
-    Bump_Init();
-
     //Initialize the tachometer for cleaner turns
     Tachometer_Init();
 
     FWall = 0;
     RWall = 1;
+    LWall = 1;
 
+    // BLE
+    //BLE_Init();
 
     //Enable interrupts
     EnableInterrupts();
@@ -372,11 +487,11 @@ void main(void){
     while(1){
 
         //Navigate the maze
-        //Navigate_Maze();
         Travelling();
+        Navigate_Maze();
 
         //Wait for interrupts to come
         WaitForInterrupt();
+
     }
 }
-
