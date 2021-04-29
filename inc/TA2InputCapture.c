@@ -49,6 +49,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 void ta2dummy(int32_t t){};       // dummy function
 void (*CaptureTaskk1)(int32_t time) = ta2dummy;// user function
 void (*CaptureTaskk2)(int32_t time) = ta2dummy;// user function
+//void (*CaptureTaskk3)(int32_t time) = ta2dummy;// user function
 
 //------------TimerA2Capture_Init------------
 // Initialize Timer A2 in edge time mode to request interrupts on
@@ -57,12 +58,14 @@ void (*CaptureTaskk2)(int32_t time) = ta2dummy;// user function
 // Input: task is a pointer to a user function called when edge occurs
 //             parameter is 16-bit up-counting timer value when edge occurred (units of 0.083 usec)
 // Output: none
-void TimerA2Capture_Init(void(*task1)(int32_t time), void(*task2)(int32_t time)){
+void TimerA2Capture_Init(void(*task1)(int32_t time), void(*task2)(int32_t time)){ //void(*task3)(int32_t time)
   long sr;
   sr = StartCritical();
   CaptureTaskk1 = task1;             // user function
   CaptureTaskk2 = task2;
-  //P5.6 = 1, P5.7 = 2, P6.7 = 3
+  //CaptureTaskk3 = task3;
+
+  //P5.6 = 1, P5.7 = 2, P5.5 = 3, P6.7 = 3
   P5->SEL0 |= 0xC0;
   P5->SEL1 &= ~0xC0;               // configure P5.6 as TA2CCP1
   P5->DIR &= ~0xC0;                // make P5.6 in
