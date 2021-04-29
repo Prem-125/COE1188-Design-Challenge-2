@@ -46,8 +46,9 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "../inc/CortexM.h"
 #include "msp.h"
 
-void ta2dummy(uint16_t t){};       // dummy function
-void (*CaptureTask2)(uint16_t time) = ta2dummy;// user function
+void ta2dummy(int32_t t){};       // dummy function
+void (*CaptureTaskk1)(int32_t time) = ta2dummy;// user function
+void (*CaptureTaskk2)(int32_t time) = ta2dummy;// user function
 
 //------------TimerA2Capture_Init------------
 // Initialize Timer A2 in edge time mode to request interrupts on
@@ -56,13 +57,15 @@ void (*CaptureTask2)(uint16_t time) = ta2dummy;// user function
 // Input: task is a pointer to a user function called when edge occurs
 //             parameter is 16-bit up-counting timer value when edge occurred (units of 0.083 usec)
 // Output: none
-void TimerA2Capture_Init(void(*task)(uint16_t time)){long sr;
+void TimerA2Capture_Init(void(*task1)(int32_t time), void(*task2)(int32_t time)){
+  long sr;
   sr = StartCritical();
-  CaptureTask2 = task;             // user function
-  // initialize P5.6 and make it both edges (P5.6 TA2CCP1)
-  P5->SEL0 |= 0x40;
-  P5->SEL1 &= ~0x40;               // configure P5.6 as TA2CCP1
-  P5->DIR &= ~0x40;                // make P5.6 in
+  CaptureTaskk1 = task1;             // user function
+  CaptureTaskk2 = task2;
+  //P5.6 = 1, P5.7 = 2, P6.7 = 3
+  P5->SEL0 |= 0xC0;
+  P5->SEL1 &= ~0xC0;               // configure P5.6 as TA2CCP1
+  P5->DIR &= ~0xC0;                // make P5.6 in
   TIMER_A2->CTL &= ~0x0030;        // halt Timer A2
   // bits15-10=XXXXXX, reserved
   // bits9-8=10,       clock source to SMCLK
@@ -86,6 +89,7 @@ void TimerA2Capture_Init(void(*task)(uint16_t time)){long sr;
   // bit1=X,           capture overflow status
   // bit0=0,           clear capture/compare interrupt pending
   TIMER_A2->CCTL[1] = 0xC910;
+  TIMER_A2->CCTL[2] = 0xC910;
   TIMER_A2->EX0 &= ~0x0007;        // configure for input clock divider /1
   NVIC->IP[3] = (NVIC->IP[3]&0xFFFF00FF)|0x00004000; // priority 2
 // interrupts enabled in the main program after all devices initialized
@@ -103,6 +107,12 @@ void TimerA2Capture_Init(void(*task)(uint16_t time)){long sr;
 }
 
 void TA2_N_IRQHandler(void){
-  TIMER_A2->CCTL[1] &= ~0x0001;    // acknowledge capture/compare interrupt 1
-  (*CaptureTask2)(TIMER_A2->CCR[1]);// execute user task
+    if(((TIMER_A2->CCTL[1])&0x0001) != 0){
+        TIMER_A2->CCTL[1] &= ~0x0001;  // acknowledge capture/compare interrupt 2
+        (*CaptureTaskk1)(TIMER_A2->CCR[1]);// execute user task
+    }
+    if(((TIMER_A2->CCTL[2])&0x0001) != 0){
+            TIMER_A2->CCTL[2] &= ~0x0001;  // acknowledge capture/compare interrupt 2
+            (*CaptureTaskk2)(TIMER_A2->CCR[2]);// execute user task
+    }
 }
