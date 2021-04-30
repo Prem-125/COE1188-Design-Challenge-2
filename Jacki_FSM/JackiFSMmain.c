@@ -208,9 +208,9 @@ void Center_Handler(int32_t timeIn1)
 
 void Left_Handler(int32_t timeIn2)
 {
-    if(lRise) ltime = timeIn2;
-    else nl = LPF_Calc(abs(timeIn2-ltime));
-    lRise = !lRise;
+//    if(lRise) ltime = timeIn2;
+//    else nl = LPF_Calc(abs(timeIn2-ltime));
+//    lRise = !lRise;
 }
 
 void Right_Handler(int32_t timeIn3)
@@ -275,12 +275,12 @@ void SysTick_Handler(void){ // every 1ms
     //Get the converted values of center and right
     Center = CenterConvert(nc);
     Right = RightConvert(nr);
-    Left = LeftConvert(nl);
+//    Left = LeftConvert(nl);
 
     //Determines if a wall is detected or not
     FWall = (Center > 0 ? 1 : 0);
     RWall = (Right  > 0 ? 1 : 0);
-    LWall = (Left  > 0 ? 1 : 0);
+//    LWall = (Left  > 0 ? 1 : 0);
 
     //Display results to serial port
     if(Time % 1000 == 0){
@@ -297,10 +297,10 @@ void SysTick_Handler(void){ // every 1ms
         EUSCIA0_OutUDec(nc); EUSCIA0_OutChar(LF);
         EUSCIA0_OutUDec(FWall); EUSCIA0_OutChar(LF);
 
-        EUSCIA0_OutString("\nLeft\n");
-        EUSCIA0_OutUDec(Left); EUSCIA0_OutChar(LF);
-        EUSCIA0_OutUDec(nl); EUSCIA0_OutChar(LF);
-        EUSCIA0_OutUDec(LWall); EUSCIA0_OutChar(LF);
+//        EUSCIA0_OutString("\nLeft\n");
+//        EUSCIA0_OutUDec(Left); EUSCIA0_OutChar(LF);
+//        EUSCIA0_OutUDec(nl); EUSCIA0_OutChar(LF);
+//        EUSCIA0_OutUDec(LWall); EUSCIA0_OutChar(LF);
 
     }
     Time++;
@@ -321,34 +321,27 @@ void Navigate_Maze(){
     if(FWall == 0 && RWall == 1) //Straight
     {
         Port2_Output(RED);
-        Travelling();
     }
-    else if (FWall == 0 && LWall == 1) // other straight
-    {
-        Port2_Output(CLEAR);
-        Travelling();
-    }
+//    else if (FWall == 0 && LWall == 1) // other straight
+//    {
+//        Port2_Output(CLEAR);
+//        Travelling();
+//    }
     else if(FWall == 1 && RWall == 1) //Turn Left
     {
         Port2_Output(YELLOW);
         Turn_Left();
-        Travelling();
     }
     else if(RWall == 0) //Turn Right
     {
         Port2_Output(GREEN);
         Turn_Right();
-        Travelling();
     }
     /*else if(LineReading!= 0x3F){ // Treasure Found
            Found_Treasure();
            AMAZING LIGHT SHOW WITH LED
         }*/
-    else
-    {
         Travelling();
-    }
-
 }
 
 // BLUETOOTH
@@ -437,7 +430,7 @@ void main(void){
     //Low pass filter initializers
     LPF_Init(20, 5); //Right
     LPF_Init2(0, 5); //Center
-    LPF_Init(20, 5); //Left
+//    LPF_Init(20, 5); //Left
 
     //Configure the trigger pin that drives the ultrasonic sensors
     Trigger_Init();
@@ -477,7 +470,7 @@ void main(void){
 
     FWall = 0;
     RWall = 1;
-    LWall = 1;
+//    LWall = 1;
 
     // BLE
     //BLE_Init();
@@ -489,7 +482,7 @@ void main(void){
 
         //Navigate the maze
         Travelling();
-        Navigate_Maze();
+       // Navigate_Maze();
 
         //Wait for interrupts to come
         WaitForInterrupt();
