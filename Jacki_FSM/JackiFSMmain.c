@@ -482,7 +482,7 @@ void main(void){
 
         //Navigate the maze
         Travelling();
-       // Navigate_Maze();
+        Navigate_Maze();
 
         //Wait for interrupts to come
         WaitForInterrupt();

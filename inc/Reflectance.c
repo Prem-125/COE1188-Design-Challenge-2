@@ -92,7 +92,7 @@ void Reflectance_Init(void){
 uint8_t Reflectance_Read(uint32_t time){
     // write this as part of Lab 6
 
-  P5->OUT |= 0x08;      // turn on 4 even IR LEDs
+//  P5->OUT |= 0x08;      // turn on 4 even IR LEDs
   P9->OUT |= 0x04;      // turn on 4 odd IR LEDs
   P7->DIR = 0xFF;       // make P7.7-P7.0 out
   P7->OUT = 0xFF;       // prime for measurement
@@ -100,7 +100,7 @@ uint8_t Reflectance_Read(uint32_t time){
   P7->DIR = 0x00;       // make P7.7-P7.0 in
   Clock_Delay1us(time); // wait time us
   Reflectanceresult = P7->IN;      // 1 means black, 0 means white
-  P5->OUT &= ~0x08;     // turn off 4 even IR LEDs
+//  P5->OUT &= ~0x08;     // turn off 4 even IR LEDs
   P9->OUT &= ~0x04;     // turn off 4 odd IR LEDs
   return Reflectanceresult;
 }

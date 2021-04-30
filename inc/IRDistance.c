@@ -50,19 +50,19 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "../inc/ADC14.h"
 #include "msp.h"
 
-#define Al 1195159
-#define Bl -1058
-#define Cl 40
-#define IRmaxl 150
-#define IRminl 0
-int32_t LeftConvert(int32_t nl){        // returns left distance in mm
-  int32_t sum = (nl)*.0034;
-  return (sum > IRmaxl|| sum < IRminl) ? 0 : sum;
-}
+//#define Al 1195159
+//#define Bl -1058
+//#define Cl 40
+//#define IRmaxl 150
+//#define IRminl 0
+//int32_t LeftConvert(int32_t nl){        // returns left distance in mm
+//  int32_t sum = (nl)*.0034;
+//  return (sum > IRmaxl|| sum < IRminl) ? 0 : sum;
+//}
 #define Ac 1195159
 #define Bc -1058
 #define Cc 40
-#define IRmaxc 40
+#define IRmaxc 35
 #define IRminc 5
 int32_t CenterConvert(int32_t nc){   // returns center distance in mm
   int32_t sum = (nc)*.0034;
