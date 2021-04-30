@@ -63,7 +63,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 #define Bc -1058
 #define Cc 40
 #define IRmaxc 35
-#define IRminc 5
+#define IRminc 0
 int32_t CenterConvert(int32_t nc){   // returns center distance in mm
   int32_t sum = (nc)*.0034;
   return (sum > IRmaxc || sum < IRminc) ? 0 : sum;
